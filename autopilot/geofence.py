@@ -1,14 +1,16 @@
 import math
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Optional
+from core.models import HSSBolgesi
 from core.logger import logger
 from core.event_bus import bus, EVENT_GEOFENCE_ALERT
 
 
 class GeofenceMonitor:
-    """Yarışma uçuş alanı (Geofence) ve irtifa sınır kontrolcüsü.
+    """Yarışma uçuş alanı (Geofence), Hava Savunma Sistemleri (HSS) ve irtifa sınır kontrolcüsü.
     
     Yarışma sahası dışına çıkmayı ve diskalifiye olmayı önler.
     Sanal sınıra yaklaşıldığında ikaz verir, sınır aşıldığında RTL tetikler.
+    HSS tehdit hacimlerini (uçuşa yasak silindirik bölgeler) denetler.
     """
 
     def __init__(
@@ -22,6 +24,12 @@ class GeofenceMonitor:
         self.min_alt_m = min_alt_m
         self.max_alt_m = max_alt_m
         self.warning_dist_m = warning_dist_m
+        self.hss_bolgeleri: List[HSSBolgesi] = []
+
+    def set_hss_bolgeleri(self, hss_list: List[HSSBolgesi]):
+        """Hakem sunucusundan alınan HSS tehdit bölgelerini atar."""
+        self.hss_bolgeleri = hss_list
+        logger.info(f"{len(hss_list)} adet HSS (Hava Savunma Sistemi) tehdit hacmi tanımlandı.")
 
     def is_inside_polygon(self, lat: float, lon: float) -> bool:
         """Ray-casting algoritması ile noktanın poligon içinde olup olmadığını belirler."""
@@ -51,7 +59,6 @@ class GeofenceMonitor:
             return 999.0
 
         min_dist = float('inf')
-        # 1 derece enlem ~ 111,000 metre, boylam ~ 111,000 * cos(lat) metre
         lat_m = 111139.0
         lon_m = 111139.0 * math.cos(math.radians(lat))
 
@@ -60,11 +67,8 @@ class GeofenceMonitor:
             p1 = self.polygon[i]
             p2 = self.polygon[(i + 1) % n]
             
-            # Kenar vektörü
             dx = (p2[1] - p1[1]) * lon_m
             dy = (p2[0] - p1[0]) * lat_m
-            
-            # Nokta vektörü
             px = (lon - p1[1]) * lon_m
             py = (lat - p1[0]) * lat_m
 
@@ -82,6 +86,23 @@ class GeofenceMonitor:
 
         return min_dist
 
+    def check_hss_violation(self, lat: float, lon: float, alt: float) -> Tuple[bool, Optional[HSSBolgesi]]:
+        """HSS tehdit hacminin (silindirik kubbe) ihlal edilip edilmediğini denetler."""
+        lat_m = 111139.0
+        lon_m = 111139.0 * math.cos(math.radians(lat))
+
+        for hss in self.hss_bolgeleri:
+            # İrtifa aralığında mı?
+            if hss.alt_irtifa_m <= alt <= hss.ust_irtifa_m:
+                # Yatay mesafe
+                dx = (lon - hss.merkez_boylam) * lon_m
+                dy = (lat - hss.merkez_enlem) * lat_m
+                dist = math.hypot(dx, dy)
+                if dist <= hss.yaricap_m:
+                    return True, hss
+
+        return False, None
+
     def validate_position(self, lat: float, lon: float, alt: float) -> Tuple[bool, str]:
         """Konumun güvenli bölgede olup olmadığını denetler."""
         # 1. İrtifa Kontrolü
@@ -94,7 +115,14 @@ class GeofenceMonitor:
             bus.emit(EVENT_GEOFENCE_ALERT, mesaj=msg, ihlal=True)
             return False, msg
 
-        # 2. Alan Poligonu Kontrolü
+        # 2. HSS (Hava Savunma Sistemi) İhlali Kontrolü
+        hss_violated, hss_threat = self.check_hss_violation(lat, lon, alt)
+        if hss_violated and hss_threat is not None:
+            msg = f"HSS İHLALİ! Yasaklı HSS Bölgesi #{hss_threat.hss_id} içine girildi!"
+            bus.emit(EVENT_GEOFENCE_ALERT, mesaj=msg, ihlal=True)
+            return False, msg
+
+        # 3. Alan Poligonu Kontrolü
         inside = self.is_inside_polygon(lat, lon)
         dist = self.check_distance_to_boundary(lat, lon)
 

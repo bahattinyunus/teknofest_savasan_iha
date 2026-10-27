@@ -17,6 +17,7 @@ app = FastAPI(
 aktif_oturumlar: Dict[str, Dict[str, Any]] = {}
 takim_telemetrileri: Dict[int, Dict[str, Any]] = {}
 kilitlenme_kayitlari: List[Dict[str, Any]] = []
+kamikaze_kayitlari: List[Dict[str, Any]] = []
 skorlar: Dict[int, int] = {}
 
 
@@ -56,6 +57,13 @@ class KilitlenmeIstegi(BaseModel):
     kilitlenmeBaslangicZamani: ZamanSemasi
     kilitlenmeBitisZamani: ZamanSemasi
     otonom_kilitlenme: int = 1
+
+
+class KamikazeIstegi(BaseModel):
+    kamikazeBaslangicZamani: ZamanSemasi
+    kamikazeBitisZamani: ZamanSemasi
+    qrMetni: str
+    otonom: int = 1
 
 
 def get_current_server_time() -> Dict[str, int]:
@@ -178,6 +186,52 @@ def kilitlenme_bilgisi(payload: KilitlenmeIstegi):
         "durum": "ONAYLANDI",
         "mesaj": "Tebrikler! 4.0 saniye kilitlenme basariyla kabul edildi.",
         "hesaplanan_sure_sn": round(fark, 2),
+        "guncel_skor": skorlar[1]
+    }
+
+
+@app.get("/api/qr_koordinati")
+def qr_koordinati():
+    """Kamikaze hedef QR kodunun yer koordinatlarını döner."""
+    return {
+        "qrEnlem": 41.104520,
+        "qrBoylam": 28.905540
+    }
+
+
+@app.get("/api/hss_koordinatlari")
+def hss_koordinatlari():
+    """Sanal Hava Savunma Sistemi (HSS) tehdit hacimlerini döner."""
+    return {
+        "hss_bolgeleri": [
+            {
+                "id": 1,
+                "enlem": 41.107000,
+                "boylam": 28.908000,
+                "yaricap": 60.0,
+                "alt_irtifa": 0.0,
+                "ust_irtifa": 120.0
+            }
+        ]
+    }
+
+
+@app.post("/api/kamikaze_bilgisi", status_code=status.HTTP_200_OK)
+def kamikaze_bilgisi(payload: KamikazeIstegi):
+    """Kamikaze QR okuma ve dalış görevi bildirim uç noktası."""
+    kayit = {
+        "kayit_zamani": datetime.now().isoformat(),
+        "veri": payload.model_dump()
+    }
+    kamikaze_kayitlari.append(kayit)
+    
+    # Kamikaze Büyük Ödül Puanı (+150)
+    skorlar[1] = skorlar.get(1, 0) + 150
+
+    return {
+        "durum": "ONAYLANDI",
+        "mesaj": f"Tebrikler! Kamikaze dalış ve QR okuma başarıyla onaylandı (QR: {payload.qrMetni}).",
+        "puan": 150,
         "guncel_skor": skorlar[1]
     }
 

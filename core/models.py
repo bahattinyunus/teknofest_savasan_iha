@@ -166,3 +166,55 @@ class KilitlenmePaketi:
             "kilitlenmeBitisZamani": self.kilitlenmeBitisZamani.to_dict(),
             "otonom_kilitlenme": self.otonom_kilitlenme
         }
+
+
+class KamikazeDurumu(Enum):
+    """Kamikaze / Yer Hedefi Dalış Görevi aşamaları."""
+    BEKLEMEDE = "BEKLEMEDE"               # Görev başlamadı
+    HEDEFE_YONELIS = "HEDEFE_YONELIS"     # QR koordinatına seyrüsefer
+    DALISTA = "DALISTA"                   # Hedefe doğru otonom dalış
+    QR_OKUNDU = "QR_OKUNDU"               # QR/ArUco başarıyla tespit edildi
+    PAS_GECME = "PAS_GECME"               # Asgari irtifada otonom pull-up (tırmanış)
+    TAMAMLANDI = "TAMAMLANDI"             # Kamikaze paketi sunucuya başarıyla iletildi
+
+
+@dataclass
+class QRKoordinati:
+    """Hakem sunucusundan GET /api/qr_koordinati ile alınan yer hedefi koordinatı."""
+    qrEnlem: float
+    qrBoylam: float
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "QRKoordinati":
+        return cls(
+            qrEnlem=float(data.get("qrEnlem", 0.0)),
+            qrBoylam=float(data.get("qrBoylam", 0.0))
+        )
+
+
+@dataclass
+class HSSBolgesi:
+    """Hava Savunma Sistemi (HSS) / Uçuşa Yasak Tehdit Hacmi."""
+    hss_id: int
+    merkez_enlem: float
+    merkez_boylam: float
+    yaricap_m: float
+    alt_irtifa_m: float
+    ust_irtifa_m: float
+
+
+@dataclass
+class KamikazePaketi:
+    """Başarılı QR okuma ve dalış sonrası sunucuya iletilen paket (POST /api/kamikaze_bilgisi)."""
+    kamikazeBaslangicZamani: ZamanBilgisi
+    kamikazeBitisZamani: ZamanBilgisi
+    qrMetni: str
+    otonom: int = 1
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "kamikazeBaslangicZamani": self.kamikazeBaslangicZamani.to_dict(),
+            "kamikazeBitisZamani": self.kamikazeBitisZamani.to_dict(),
+            "qrMetni": self.qrMetni,
+            "otonom": self.otonom
+        }

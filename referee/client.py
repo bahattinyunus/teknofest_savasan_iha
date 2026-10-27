@@ -6,7 +6,10 @@ from core.models import (
     TelemetriPaketi,
     SunucuYaniti,
     KilitlenmePaketi,
-    ZamanBilgisi
+    ZamanBilgisi,
+    QRKoordinati,
+    HSSBolgesi,
+    KamikazePaketi
 )
 from core.logger import logger
 from .time_sync import TimeSynchronizer
@@ -132,6 +135,65 @@ class RefereeClient:
                 return False
         except Exception as e:
             logger.error(f"Kilitlenme paketi gönderilirken ağ hatası: {e}")
+            return False
+
+    def qr_koordinati_al(self) -> Optional[QRKoordinati]:
+        """Kamikaze görevi için hedef QR koordinatını hakem sunucusundan çeker (/api/qr_koordinati)."""
+        url = f"{self.base_url}/api/qr_koordinati"
+        try:
+            resp = self.session.get(url, timeout=self.timeout)
+            if resp.status_code == 200:
+                data = resp.json()
+                koordinat = QRKoordinati.from_dict(data)
+                logger.info(f"Hakem sunucusundan hedef QR koordinatı alındı: {koordinat}")
+                return koordinat
+            else:
+                logger.warning(f"QR koordinatı alınamadı: HTTP {resp.status_code}")
+                return None
+        except Exception as e:
+            logger.warning(f"QR koordinatı sorgu hatası: {e}")
+            return None
+
+    def hss_koordinatlari_al(self) -> List[HSSBolgesi]:
+        """Hava Savunma Sistemi (HSS) tehdit hacimlerini sorgular (/api/hss_koordinatlari)."""
+        url = f"{self.base_url}/api/hss_koordinatlari"
+        try:
+            resp = self.session.get(url, timeout=self.timeout)
+            if resp.status_code == 200:
+                data = resp.json()
+                hss_list = []
+                for item in data.get("hss_bolgeleri", []):
+                    hss_list.append(HSSBolgesi(
+                        hss_id=int(item.get("id", 0)),
+                        merkez_enlem=float(item.get("enlem", 0.0)),
+                        merkez_boylam=float(item.get("boylam", 0.0)),
+                        yaricap_m=float(item.get("yaricap", 50.0)),
+                        alt_irtifa_m=float(item.get("alt_irtifa", 0.0)),
+                        ust_irtifa_m=float(item.get("ust_irtifa", 120.0))
+                    ))
+                logger.info(f"Hakem sunucusundan {len(hss_list)} adet HSS tehdit bölgesi alındı.")
+                return hss_list
+            return []
+        except Exception as e:
+            logger.warning(f"HSS koordinat sorgu hatası: {e}")
+            return []
+
+    def kamikaze_bilgisi_gonder(self, kamikaze_paketi: KamikazePaketi) -> bool:
+        """Kamikaze QR okuma ve dalış görevi tamamlandığında sunucuya bildirir (/api/kamikaze_bilgisi)."""
+        url = f"{self.base_url}/api/kamikaze_bilgisi"
+        payload = kamikaze_paketi.to_dict()
+
+        logger.info(f"Hakem sunucusuna Kamikaze paketi iletiliyor: {payload}")
+        try:
+            resp = self.session.post(url, json=payload, timeout=self.timeout)
+            if resp.status_code in [200, 201]:
+                logger.info(">>> KAMİKAZE GÖREVİ SUNUCU TARAFINDAN ONAYLANDI! (+150 Puan) <<<")
+                return True
+            else:
+                logger.error(f"Kamikaze paketi reddedildi: HTTP {resp.status_code} - {resp.text}")
+                return False
+        except Exception as e:
+            logger.error(f"Kamikaze gönderim hatası: {e}")
             return False
 
     def cikis_yap(self) -> bool:

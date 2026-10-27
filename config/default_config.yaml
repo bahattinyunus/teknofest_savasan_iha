@@ -25,6 +25,8 @@ tespit_ve_takip:
   cihaz: "cuda:0"               # 'cuda:0', 'cpu', 'mps'
   tracker_tipi: "bytetrack"     # 'bytetrack' veya 'kalman'
   simulasyon_modu: true         # Model yoksa sanal hedef tespiti saglar
+  gecikme_kompanzasyonu: true   # Delayed Kalman Filter ile 35ms kamera/çıkarım gecikme telafisi
+  gecikme_suresi_sn: 0.035
 
 kilitlenme:
   gerekli_sure_sn: 4.0          # Kesintisiz kilitlenme suresi (TEKNOFEST sartnamesi genelde 4 sn)
@@ -34,6 +36,19 @@ kilitlenme:
   otonom_mu: 1                  # 1: Otonom, 0: Manuel
   kanit_fps: 20
   kanit_on_kayit_sn: 2.0        # Kilit baslamadan 2 sn oncesini de kanit videosuna dahil et
+
+kamikaze_gorevi:
+  aktif: true                   # Buyuk Odul icin zorunlu Kamikaze / Yer Hedefi Dalıs gorevi
+  min_pullup_alt_m: 20.0        # Asgari guvenli pas gecme (pull-up) irtifasi (Fiziki carpma YASAK)
+  dalis_yaklasma_mesafesi_m: 80.0
+  qr_sorgulama_endpoint: "/api/qr_koordinati"
+  kamikaze_endpoint: "/api/kamikaze_bilgisi"
+
+bfm_kacis_manevralari:
+  aktif: true                   # Arkamıza rakip İHA gectiginde otonom kacis (Break Turn, Scissors, High Yo-Yo)
+  tehdit_mesafesi_m: 120.0      # Arkamizda bu mesafeden yakin rakip tehdit sayilir
+  tehdit_aci_konisi_deg: 35.0   # 6 saat yonundeki tehdit konisi acisi
+  maks_yatis_acisi_deg: 45.0
 
 hakem_sunucusu:
   url: "http://127.0.0.1:8000"  # Hakem sunucusu adresi (Yarismada ornek: http://192.168.1.100:8000)
@@ -67,3 +82,4 @@ geofence:
     - [41.1080, 28.9100]
     - [41.1080, 28.9000]
   uyari_mesafesi_m: 25.0        # Sinira bu kadar metre kala ikaz ver ve otonom donus planla
+  hss_engelleme_aktif: true     # Hava Savunma Sistemi (HSS) tehdit hacimlerinden otonom kacinma

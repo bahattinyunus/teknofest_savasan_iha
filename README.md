@@ -8,7 +8,7 @@
 [![Autopilot](https://img.shields.io/badge/Autopilot-ArduPilot%20%2F%20PX4%20(MAVLink)-1E88E5)](https://ardupilot.org/)
 [![FastAPI](https://img.shields.io/badge/Mock%20Server-FastAPI%20%2F%20Uvicorn-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![GUI](https://img.shields.io/badge/GCS%20GUI-PyQt6-41CD52?logo=qt&logoColor=white)](https://riverbankcomputing.com/software/pyqt/)
-[![Tests](https://img.shields.io/badge/Tests-13%20Passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-21%20Passed-brightgreen)](tests/)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
 
 **TEKNOFEST Savaşan İHA (Fighter UAV) Yarışması İçin Geliştirilmiş Uçtan Uca Otonom Hava Muharebesi, Görüntü İşleme, Hedef Kilitlenme, Güdüm ve Yer Kontrol İstasyonu Çerçevesi**
@@ -133,6 +133,41 @@ Bu komutlar Pixhawk otopilotuna yönelim açıları olarak aktarılır.
 ### 3. Koordineli Dönüş ve G Yükü Zarfı (Flight Envelope Protection)
 Sert it dalaşı manevralarında uçağın perdövitese (aerodynamic stall) girmemesi için gereken yatış açısı ve G yükü sınırlandırılır:
 $$\phi = \arctan\left(\frac{V \cdot \dot{\psi}}{g}\right), \quad n = \frac{1}{\cos\phi} \le n_{\text{max}} \quad (2.5g)$$
+
+---
+
+## ⚡ Delayed Kalman Filter (DKF) ile Gecikme Kompanzasyonu
+
+`vision/latency_compensator.py` modülü, kameradan gelen görüntü ile derin öğrenme (YOLO/TensorRT) çıkarımı arasında geçen **30 - 50 ms'lik sensör/işleme gecikmesini** telafi eder.
+
+Uçak $20\text{ m/s}$ hızla manevra yaparken 40 ms gecikme, hedef kutusunun ekranda onlarca piksel geride kalmasına yol açar. DKF, durum vektörünü ($\mathbf{x} = [x, y, v_x, v_y]^T$) gecikme süresi ($\tau_{\text{latency}}$) kadar ileri öteleyerek anlık gerçek pozisyonu tahmin eder:
+$$\hat{x}(t + \tau) = x(t) + v_x(t) \cdot \tau$$
+$$\hat{y}(t + \tau) = y(t) + v_y(t) \cdot \tau$$
+Bu sayede yüksek hızlı dönüşlerde dahi nişangah hedefin merkezinden asla kopmaz.
+
+---
+
+## 🎯 Kamikaze İHA Görevi ve QR / ArUco Çözümleme (Büyük Ödül Şartı)
+
+`vision/kamikaze_engine.py` modülü, TEKNOFEST şartnamesinde "Büyük Ödül" alabilmek için zorunlu kılınan **Kamikaze / Yer Hedefi Dalış Görevi**'ni yönetir:
+
+1. **Hedef Koordinatı Alımı:** `/api/qr_koordinati` uç noktasından yer hedefi GPS enlem/boylamı çekilir.
+2. **Otonom Dalış:** İHA, hedef alanına $80\text{m}$ yaklaştığında otonom olarak dalış açısına geçer.
+3. **QR / ArUco Çözümleme:** Kamera zemin üzerindeki görsel kodu havadan deşifre eder.
+4. **Asgari İrtifa ve Otonom Pull-Up (Pas Geçme):**
+   * Şartname gereği **hedefe fiziki çarpma kesinlikle yasaktır**.
+   * İrtifa $20.0\text{m}$ (`min_pullup_alt_m`) kritik sınırına indiğinde motor acil **Pull-Up (Otonom Tırmanış)** komutu vererek uçağı güvenli irtifaya tırmandırır.
+5. **Raporlama:** Okunan QR metni ve dalış zaman damgaları `/api/kamikaze_bilgisi` uç noktasına iletilerek **+150 Puan** alınır.
+
+---
+
+## 🛡 Temel Savaş Manevraları (BFM) ve Taktiksel Kaçış
+
+`autopilot/bfm_maneuvers.py`, arkamıza bir rakip İHA geçtiğinde (6 saat yönü, $\pm 35^\circ$ tehdit konisi) kilitlenmeyi engellemek için askeri BFM (Basic Fighter Maneuvers) taktikleri üretir:
+
+* **Break Turn (Sert Yatışlı Ani Kaçış Dönüşü):** Maksimum yatış açısıyla ($45^\circ$) ani dönüş yaparak rakibin görüş hattını (LOS) bozar.
+* **Scissors (Makas Manevrası):** 2 saniyede bir yön değiştiren agresif S-dönüşleriyle arkadaki hızlı rakibin uçağımızın önüne taşmasını (overshoot) sağlar.
+* **High Yo-Yo (Enerji/İrtifa Takası):** Dik tırmanış yaparak hızı düşürür; arkadan gelen rakip yüksek hızla altımızdan geçerek önümüze düşer.
 
 ---
 
@@ -362,20 +397,28 @@ pytest tests/ -v
 
 Çıktı örneği:
 ```text
-tests/test_geofence.py::test_geofence_inside PASSED                      [  7%]
-tests/test_geofence.py::test_geofence_outside PASSED                     [ 15%]
-tests/test_geofence.py::test_geofence_altitude_limits PASSED             [ 23%]
-tests/test_guidance.py::test_pure_pursuit_heading PASSED                 [ 30%]
-tests/test_guidance.py::test_flight_envelope_limiter PASSED              [ 38%]
-tests/test_guidance.py::test_guidance_controller_facade PASSED          [ 46%]
-tests/test_lock_engine.py::test_lock_engine_requires_5_percent_area PASSED [ 53%]
-tests/test_lock_engine.py::test_lock_engine_starts_on_valid_target PASSED [ 61%]
-tests/test_lock_engine.py::test_lock_engine_completes_lock PASSED         [ 69%]
-tests/test_models.py::test_zaman_bilgisi PASSED                          [ 76%]
-tests/test_models.py::test_hedef_kutusu_geometri PASSED                  [ 84%]
-tests/test_models.py::test_telemetri_paketi_serialization PASSED        [ 92%]
+tests/test_bfm.py::test_bfm_threat_detection PASSED                      [  5%]
+tests/test_bfm.py::test_bfm_maneuver_execution PASSED                    [ 10%]
+tests/test_geofence.py::test_geofence_inside PASSED                      [ 14%]
+tests/test_geofence.py::test_geofence_outside PASSED                     [ 19%]
+tests/test_geofence.py::test_geofence_altitude_limits PASSED             [ 24%]
+tests/test_guidance.py::test_pure_pursuit_heading PASSED                 [ 29%]
+tests/test_guidance.py::test_flight_envelope_limiter PASSED              [ 33%]
+tests/test_guidance.py::test_guidance_controller_facade PASSED          [ 38%]
+tests/test_kamikaze.py::test_kamikaze_engine_workflow PASSED            [ 43%]
+tests/test_kamikaze.py::test_hss_threat_avoidance PASSED                 [ 48%]
+tests/test_kamikaze.py::test_kamikaze_paketi_serialization PASSED        [ 52%]
+tests/test_latency_compensator.py::test_delayed_kalman_filter_initialization PASSED [ 57%]
+tests/test_latency_compensator.py::test_delayed_kalman_filter_velocity_prediction PASSED [ 62%]
+tests/test_latency_compensator.py::test_box_latency_compensation PASSED  [ 67%]
+tests/test_lock_engine.py::test_lock_engine_requires_5_percent_area PASSED [ 71%]
+tests/test_lock_engine.py::test_lock_engine_starts_on_valid_target PASSED [ 76%]
+tests/test_lock_engine.py::test_lock_engine_completes_lock PASSED         [ 81%]
+tests/test_models.py::test_zaman_bilgisi PASSED                          [ 86%]
+tests/test_models.py::test_hedef_kutusu_geometri PASSED                  [ 90%]
+tests/test_models.py::test_telemetri_paketi_serialization PASSED        [ 95%]
 tests/test_models.py::test_sunucu_yaniti_parsing PASSED                  [100%]
-============================== 13 passed in 0.67s ==============================
+============================== 21 passed in 0.80s ==============================
 ```
 
 ---
