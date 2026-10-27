@@ -211,3 +211,5 @@ pytest tests/ -v
 
 ## 📜 Lisans
 Bu proje [MIT Lisansı](LICENSE) ile lisanslanmıştır. TEKNOFEST Savaşan İHA takımlarının kullanımına ve geliştirmesine tamamen açıktır. Başarılar dileriz! 🚀
+#   t e k n o f e s t _ s a v a s a n _ i h a  
+ 
