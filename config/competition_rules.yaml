@@ -1,0 +1,25 @@
+# =====================================================================
+# TEKNOFEST SAVASAN IHA - YARISMA KURALLARI VE PUANLAMA PARAMETRELERI
+# =====================================================================
+
+kurallar:
+  kilitlenme_suresi_sn: 4.0
+  kilitlenme_gecikme_bildirim_maks_sn: 2.0  # Kilitlenme bittikten sonra en gec 2 sn icinde sunucuya gonderilmelidir
+  hedef_ekran_orani_min: 0.05               # %5 boyut kurali
+  telemetri_frekans_araligi_hz:
+    min: 1.0
+    maks: 5.0
+  kilitlenme_kanit_teslimi:
+    gerekli: true
+    format: "mp4"
+    fps: 20
+
+puanlama:
+  gecerli_kilitlenme_puani: 100
+  hatali_kilitlenme_cezasi: -50             # Hedef yokken veya sartlar saglanmadan gonderilen kilit
+  telemetri_kesintisi_ceza_puani_sn: -2     # Telemetri kesildiginde saniye basi ceza
+  geofence_ihlali_ceza: -200                # Sinir ihlali ve acil RTL
+
+zaman_senkronizasyonu:
+  kabul_edilebilir_saat_farki_ms: 500       # Sunucu ile İHA arasındaki izin verilen azami saat sapmasi
+  ntp_kullanimi: true

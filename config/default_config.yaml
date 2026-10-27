@@ -1,0 +1,69 @@
+# =====================================================================
+# TEKNOFEST SAVASAN IHA - MERKEZI KONFIGURASYON (default_config.yaml)
+# =====================================================================
+
+general:
+  takim_numarasi: 1
+  takim_adi: "GOKTURK_SAVASAN_IHA"
+  log_level: "INFO"             # DEBUG, INFO, WARNING, ERROR
+  kayit_dizini: "logs"
+  kanit_dizini: "proofs"        # Kilitlenme kanit video ve JSON kayitlari
+
+kamera:
+  kaynak: 0                     # Kamera indeksi (0, 1) veya video dosya yolu / RTSP url
+  genislik: 1280
+  yukseklik: 720
+  fps: 30
+  kayit_et: true                # Tum ucus videosunu arka planda kaydet
+
+tespit_ve_takip:
+  model_yolu: "models/savasan_iha_best.pt"
+  onnx_yolu: "models/savasan_iha_best.onnx"
+  use_onnx: false               # OnnxRuntime / TensorRT ile hizli calisma
+  guven_esigi: 0.45             # Minimum confidence score (0.0 - 1.0)
+  iou_esigi: 0.45
+  cihaz: "cuda:0"               # 'cuda:0', 'cpu', 'mps'
+  tracker_tipi: "bytetrack"     # 'bytetrack' veya 'kalman'
+  simulasyon_modu: true         # Model yoksa sanal hedef tespiti saglar
+
+kilitlenme:
+  gerekli_sure_sn: 4.0          # Kesintisiz kilitlenme suresi (TEKNOFEST sartnamesi genelde 4 sn)
+  hedef_alan_orani_min: 0.05    # Hedef ekran alaninin en az %5'ini kaplamalidir (Genislik*Yukseklik / EkranAlani)
+  merkez_tolerans_orani: 0.35   # Ekran merkezine gore kabul edilebilir kutu mesafesi (0.0-1.0)
+  kayip_toleransi_sn: 0.35      # Kisa sureli kadraj kaybi veya titreme toleransi (hold_grace_time)
+  otonom_mu: 1                  # 1: Otonom, 0: Manuel
+  kanit_fps: 20
+  kanit_on_kayit_sn: 2.0        # Kilit baslamadan 2 sn oncesini de kanit videosuna dahil et
+
+hakem_sunucusu:
+  url: "http://127.0.0.1:8000"  # Hakem sunucusu adresi (Yarismada ornek: http://192.168.1.100:8000)
+  kullanici_adi: "takim1"
+  sifre: "sifre123"
+  telemetri_frekansi_hz: 3.0    # Saniyede gonderilecek paket sayisi (1 - 5 Hz)
+  zaman_asimi_sn: 1.5           # HTTP timeout
+  otomatik_yeniden_baglan: true
+  mock_sunucu: true             # Yerel test icin dahili mock sunucu kullan
+
+otopilot:
+  baglanti_dizgesi: "tcp:127.0.0.1:5760"  # SITL icin 'tcp:127.0.0.1:5760' veya 'udp:127.0.0.1:14550', Pixhawk icin 'com3' veya '/dev/ttyACM0'
+  baud_rate: 115200
+  heartbeat_timeout_sn: 5.0
+  simulasyon: true              # Gercek otopilot yoksa sanal telemetri uret
+
+gudum:
+  algoritma: "proportional_navigation" # 'proportional_navigation', 'pure_pursuit', 'visual_servoing'
+  kazanc_N: 3.0                 # PN navigasyon kazanci
+  maks_yatis_acisi_deg: 35.0    # Maksimum roll acisi limiti
+  maks_tirmanma_acisi_deg: 20.0 # Maksimum pitch acisi limiti
+  hedef_hiz_m_s: 18.0
+
+geofence:
+  aktif: true
+  min_irtifa_m: 30.0
+  maks_irtifa_m: 150.0
+  sinir_noktalari:              # Yarışma alanı poligon koordinatları (Örnek Havalimanı / Meydan)
+    - [41.1000, 28.9000]
+    - [41.1000, 28.9100]
+    - [41.1080, 28.9100]
+    - [41.1080, 28.9000]
+  uyari_mesafesi_m: 25.0        # Sinira bu kadar metre kala ikaz ver ve otonom donus planla

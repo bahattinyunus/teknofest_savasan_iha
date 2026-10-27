@@ -1,0 +1,30 @@
+# TEKNOFEST Savasan IHA Requirements
+# ==================================
+
+# Temel Matematik & Veri
+numpy>=1.24.0
+scipy>=1.10.0
+pyyaml>=6.0.1
+pydantic>=2.5.0
+
+# Goruntu Isleme & Yapay Zeka
+opencv-python>=4.8.0
+ultralytics>=8.1.0
+onnxruntime>=1.16.0
+
+# Otopilot & Ucus Kontrolu
+pymavlink>=2.4.40
+
+# Hakem Sunucusu & Iletisim (Client & Mock Server)
+requests>=2.31.0
+httpx>=0.25.0
+fastapi>=0.104.0
+uvicorn>=0.24.0
+
+# Arayuz (GCS)
+PyQt6>=6.6.0
+
+# Test & Gelistirme
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+colorama>=0.4.6
