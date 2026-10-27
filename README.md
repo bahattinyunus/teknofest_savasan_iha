@@ -8,7 +8,7 @@
 [![Autopilot](https://img.shields.io/badge/Autopilot-ArduPilot%20%2F%20PX4%20(MAVLink)-1E88E5)](https://ardupilot.org/)
 [![FastAPI](https://img.shields.io/badge/Mock%20Server-FastAPI%20%2F%20Uvicorn-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![GUI](https://img.shields.io/badge/GCS%20GUI-PyQt6-41CD52?logo=qt&logoColor=white)](https://riverbankcomputing.com/software/pyqt/)
-[![Tests](https://img.shields.io/badge/Tests-21%20Passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-27%20Passed-brightgreen)](tests/)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
 
 **TEKNOFEST Savaşan İHA (Fighter UAV) Yarışması İçin Geliştirilmiş Uçtan Uca Otonom Hava Muharebesi, Görüntü İşleme, Hedef Kilitlenme, Güdüm ve Yer Kontrol İstasyonu Çerçevesi**
@@ -226,6 +226,38 @@ Resmi yarışma sunucusu yalnızca yarışma günü açıldığı için, bu repo
 * Rakip İHA radar tablosu.
 * Tek tıkla "Acil RTL", "Otonom/Manuel Geçiş" ve "Kanıt Klasörünü Aç" kontrol butonları.
 
+### Web Tabanlı Canlı Görev Paneli (`gcs/web_dashboard.py`):
+Pist başında veya takım çadırında masaüstü haricinde **tablet, iPad veya telefonlardan** yerel ağ (`http://localhost:8080`) üzerinden:
+* Canlı MJPEG video akışı,
+* Anlık telemetri kadranları (İrtifa, Hız, Yönelim, Batarya),
+* Kilitlenme sayacı ve Acil Durum RTL butonlarına web tarayıcısından erişim sağlar.
+
+---
+
+## 🌬 Rüzgar Tahmini ve Crab Açısı Düzeltmesi (Wind Estimator)
+
+`autopilot/wind_estimator.py`, sabit kanatlı uçaklarda rüzgar nedeniyle oluşan yer izi sürüklenmesini hesaplar:
+$$\vec{V}_{\text{rüzgar}} = \vec{V}_{\text{yer}} - \vec{V}_{\text{hava}}$$
+Rüzgar yan bileşeni ($V_{\text{crosswind}}$) hesaplanarak pusula rotasına **Crab Açısı** ($\beta = \arcsin(V_{\text{cross}} / V_{\text{hava}})$) uygulanır. Böylece uçak rüzgara kapılmadan rakip İHA rotasını tam isabetle keser.
+
+---
+
+## 🎯 Çoklu Hedef Taktik Değerlendiricisi (Target Evaluator)
+
+`vision/target_evaluator.py`, kadrajda veya radarda birden fazla rakip İHA olduğunda hangisine saldırılacağını çok kriterli maliyet fonksiyonuyla belirler:
+$$\text{Skor} = 35\% \cdot \text{MerkezYakınlığı} + 35\% \cdot \text{AlanOranı} + 15\% \cdot \text{ModelGüveni} + 15\% \cdot \text{ÖncekiKilitDevamlılığı}$$
+En yüksek skora sahip hedef otomatik olarak kilitlenme motoruna aktarılır.
+
+---
+
+## 🎨 Sentetik İHA Veri Seti Üreticisi (Domain Randomization)
+
+`tools/synthetic_dataset_generator.py`, YOLO modelinizi eğitmek için gökyüzü gradyanları, bulut kümeleri, güneş parlamaları ve farklı yatış açılarında sentetik İHA görüntüleri ile YOLO formatında etiketler (`.txt`) üretir:
+```bash
+python tools/synthetic_dataset_generator.py --count 500 --output dataset/synthetic_uav
+```
+Üretilen veri seti doğrudan `yolo detect train data=dataset/synthetic_uav/dataset.yaml` komutuyla eğitime hazırdır!
+
 ---
 
 ## 🛠 Donanım Mimarisi ve Kablolama
@@ -397,28 +429,33 @@ pytest tests/ -v
 
 Çıktı örneği:
 ```text
-tests/test_bfm.py::test_bfm_threat_detection PASSED                      [  5%]
-tests/test_bfm.py::test_bfm_maneuver_execution PASSED                    [ 10%]
-tests/test_geofence.py::test_geofence_inside PASSED                      [ 14%]
-tests/test_geofence.py::test_geofence_outside PASSED                     [ 19%]
-tests/test_geofence.py::test_geofence_altitude_limits PASSED             [ 24%]
-tests/test_guidance.py::test_pure_pursuit_heading PASSED                 [ 29%]
-tests/test_guidance.py::test_flight_envelope_limiter PASSED              [ 33%]
-tests/test_guidance.py::test_guidance_controller_facade PASSED          [ 38%]
-tests/test_kamikaze.py::test_kamikaze_engine_workflow PASSED            [ 43%]
+tests/test_bfm.py::test_bfm_threat_detection PASSED                      [  7%]
+tests/test_dataset_generator.py::test_synthetic_dataset_generation PASSED [ 11%]
+tests/test_geofence.py::test_geofence_inside PASSED                      [ 22%]
+tests/test_geofence.py::test_geofence_outside PASSED                     [ 26%]
+tests/test_geofence.py::test_geofence_altitude_limits PASSED             [ 30%]
+tests/test_guidance.py::test_pure_pursuit_heading PASSED                 [ 33%]
+tests/test_guidance.py::test_flight_envelope_limiter PASSED              [ 37%]
+tests/test_guidance.py::test_guidance_controller_facade PASSED          [ 41%]
+tests/test_kamikaze.py::test_kamikaze_engine_workflow PASSED            [ 44%]
 tests/test_kamikaze.py::test_hss_threat_avoidance PASSED                 [ 48%]
 tests/test_kamikaze.py::test_kamikaze_paketi_serialization PASSED        [ 52%]
-tests/test_latency_compensator.py::test_delayed_kalman_filter_initialization PASSED [ 57%]
-tests/test_latency_compensator.py::test_delayed_kalman_filter_velocity_prediction PASSED [ 62%]
-tests/test_latency_compensator.py::test_box_latency_compensation PASSED  [ 67%]
-tests/test_lock_engine.py::test_lock_engine_requires_5_percent_area PASSED [ 71%]
-tests/test_lock_engine.py::test_lock_engine_starts_on_valid_target PASSED [ 76%]
-tests/test_lock_engine.py::test_lock_engine_completes_lock PASSED         [ 81%]
-tests/test_models.py::test_zaman_bilgisi PASSED                          [ 86%]
-tests/test_models.py::test_hedef_kutusu_geometri PASSED                  [ 90%]
-tests/test_models.py::test_telemetri_paketi_serialization PASSED        [ 95%]
-tests/test_models.py::test_sunucu_yaniti_parsing PASSED                  [100%]
-============================== 21 passed in 0.80s ==============================
+tests/test_latency_compensator.py::test_delayed_kalman_filter_initialization PASSED [ 56%]
+tests/test_latency_compensator.py::test_delayed_kalman_filter_velocity_prediction PASSED [ 59%]
+tests/test_latency_compensator.py::test_box_latency_compensation PASSED  [ 63%]
+tests/test_lock_engine.py::test_lock_engine_requires_5_percent_area PASSED [ 67%]
+tests/test_lock_engine.py::test_lock_engine_starts_on_valid_target PASSED [ 70%]
+tests/test_lock_engine.py::test_lock_engine_completes_lock PASSED         [ 74%]
+tests/test_models.py::test_zaman_bilgisi PASSED                          [ 78%]
+tests/test_models.py::test_hedef_kutusu_geometri PASSED                  [ 81%]
+tests/test_models.py::test_telemetri_paketi_serialization PASSED        [ 85%]
+tests/test_models.py::test_sunucu_yaniti_parsing PASSED                  [ 89%]
+tests/test_target_evaluator.py::test_target_evaluator_prioritizes_center_and_size PASSED [ 93%]
+tests/test_target_evaluator.py::test_target_evaluator_select_best PASSED [ 96%]
+tests/test_wind_estimator.py::test_wind_estimator_no_wind PASSED         [ 97%]
+tests/test_wind_estimator.py::test_wind_estimator_crosswind PASSED       [ 98%]
+tests/test_wind_estimator.py::test_wind_crab_compensation PASSED        [100%]
+============================== 27 passed in 1.30s ==============================
 ```
 
 ---

@@ -7,6 +7,7 @@ from .lock_engine import LockEngine
 from .visualizer import HUDVisualizer
 from .latency_compensator import DelayedKalmanFilter
 from .kamikaze_engine import KamikazeEngine
+from .target_evaluator import TacticalTargetEvaluator
 
 __all__ = [
     "YoloDetector",
@@ -15,5 +16,6 @@ __all__ = [
     "LockEngine",
     "HUDVisualizer",
     "DelayedKalmanFilter",
-    "KamikazeEngine"
+    "KamikazeEngine",
+    "TacticalTargetEvaluator"
 ]
