@@ -16,6 +16,7 @@ from .models import (
 )
 from .logger import setup_logger, logger
 from .event_bus import EventBus, bus
+from .blackbox import FlightBlackBox
 
 __all__ = [
     "ZamanBilgisi",
@@ -33,4 +34,5 @@ __all__ = [
     "logger",
     "EventBus",
     "bus",
+    "FlightBlackBox"
 ]

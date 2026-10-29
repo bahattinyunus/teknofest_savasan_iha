@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  aerocombat:
+    build: .
+    container_name: aerocombat_system
+    ports:
+      - "8000:8000"   # Mock Hakem Sunucusu & Dashboard
+      - "8080:8080"   # Web GCS Canlı Görev İstasyonu
+    volumes:
+      - ./logs:/app/logs
+      - ./proofs:/app/proofs
+      - ./dataset:/app/dataset
+    restart: unless-stopped
+    command: python main.py --no-gui

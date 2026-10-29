@@ -12,6 +12,7 @@ from .guidance import (
 from .geofence import GeofenceMonitor
 from .bfm_maneuvers import BFMEvasiveTactics, ManevraTipi
 from .wind_estimator import WindEstimator
+from .tactical_decision_agent import TacticalDecisionAgent, TacticalState
 
 __all__ = [
     "MavlinkBridge",
@@ -24,5 +25,7 @@ __all__ = [
     "GeofenceMonitor",
     "BFMEvasiveTactics",
     "ManevraTipi",
-    "WindEstimator"
+    "WindEstimator",
+    "TacticalDecisionAgent",
+    "TacticalState"
 ]

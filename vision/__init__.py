@@ -8,6 +8,7 @@ from .visualizer import HUDVisualizer
 from .latency_compensator import DelayedKalmanFilter
 from .kamikaze_engine import KamikazeEngine
 from .target_evaluator import TacticalTargetEvaluator
+from .tactical_radar import TacticalRadarMinimap
 
 __all__ = [
     "YoloDetector",
@@ -17,5 +18,6 @@ __all__ = [
     "HUDVisualizer",
     "DelayedKalmanFilter",
     "KamikazeEngine",
-    "TacticalTargetEvaluator"
+    "TacticalTargetEvaluator",
+    "TacticalRadarMinimap"
 ]
