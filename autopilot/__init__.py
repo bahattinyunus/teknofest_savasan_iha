@@ -13,6 +13,7 @@ from .geofence import GeofenceMonitor
 from .bfm_maneuvers import BFMEvasiveTactics, ManevraTipi
 from .wind_estimator import WindEstimator
 from .tactical_decision_agent import TacticalDecisionAgent, TacticalState
+from .swarm_tactics import SwarmTacticsController, SwarmFormation, SwarmRole
 
 __all__ = [
     "MavlinkBridge",
@@ -27,5 +28,8 @@ __all__ = [
     "ManevraTipi",
     "WindEstimator",
     "TacticalDecisionAgent",
-    "TacticalState"
+    "TacticalState",
+    "SwarmTacticsController",
+    "SwarmFormation",
+    "SwarmRole"
 ]

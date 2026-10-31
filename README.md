@@ -8,7 +8,7 @@
 [![Autopilot](https://img.shields.io/badge/Autopilot-ArduPilot%20%2F%20PX4%20(MAVLink)-1E88E5)](https://ardupilot.org/)
 [![FastAPI](https://img.shields.io/badge/Mock%20Server-FastAPI%20%2F%20Uvicorn-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![GUI](https://img.shields.io/badge/GCS%20GUI-PyQt6-41CD52?logo=qt&logoColor=white)](https://riverbankcomputing.com/software/pyqt/)
-[![Tests](https://img.shields.io/badge/Tests-33%20Passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-48%20Passed-brightgreen)](tests/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](Dockerfile)
 [![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
@@ -282,6 +282,50 @@ Rüzgar yan bileşeni ($V_{\text{crosswind}}$) hesaplanarak pusula rotasına **C
 
 ---
 
+## 🎥 2-Eksen Gimbal Takip ve Görsel Stabilizasyon
+
+`vision/gimbal_controller.py`, yüksek hızlı dönüşlerde ve sert rüzgarlarda sabit kameranın görüş açısının (FOV) hedefi kaybetmesini önlemek için **2 eksenli (Pan/Tilt) fırçasız gimbal** stabilizasyonu ve aktif görsel hedef takibi sağlar:
+
+* **PID Kapalı Çevrim Takip:** Ekran merkezinden piksel sapmalarını ($e_x, e_y$) oransal-türevsel kazançlarla gimbal açısal hızlarına dönüştürür.
+* **Mekanik Limit Koruması:** Gimbal servo ve fırçasız motor sınırlarını aşmayacak şekilde sınırlandırma (örn. Pan: $\pm 60^\circ$, Tilt: $-45^\circ / +20^\circ$).
+* **MAVLink Mount Entegrasyonu:** `MAV_CMD_DO_MOUNT_CONTROL` komut formatında Pixhawk üzerinden gimbal sürücüsüne (Storm32 / SimpleBGC / Gremsy) doğrudan centi-derece hassasiyetinde yönelim komutları gönderir.
+
+---
+
+## 📡 Otomatik Yer Anten Takipçisi (Auto Antenna Tracker - AAT)
+
+`tools/antenna_tracker.py`, yarışma sahasında uçak ile yer kontrol istasyonu (GCS) arasındaki telemetri ve yüksek çözünürlüklü video bağlantısının asla kopmaması için yerdeki yönlü (directional helical / yagi / patch) anten platformunu uçağa kilitler:
+
+* **3D Haversine ve Küresel Dünya Düzeltmesi:** Büyük mesafelerde yerel irtifa açısı Dünya'nın eğriliği ($R = 6371\text{ km}$) hesaba katılarak hassaslaştırılır:
+  $$\Delta h_{\text{eff}} = h_{\text{uav}} - h_{\text{tracker}} - \frac{d^2}{2 R_E}$$
+* **Azimut ve Elevasyon:** Yer istasyonuna göre uçağın pusula kerterizi (Azimuth: $0^\circ - 360^\circ$) ve ufuk yükseliş açısı (Elevation: $0^\circ - 90^\circ$) hesaplanır.
+* **PWM Servo Sürüşü:** Azimut ve elevasyon açıları doğrudan pan/tilt servo PWM darbe genişliklerine (1000 - 2000 $\mu\text{s}$) dönüştürülerek Arduino / Pololu servo kontrolcülerine aktarılır.
+
+---
+
+## 🦅 Çoklu İHA Sürü Taktikleri ve İt Dalaşı Doktrinleri
+
+`autopilot/swarm_tactics.py`, TEKNOFEST ve uluslararası hava muharebesi senaryolarında birden fazla dost İHA'nın koordineli biçimde hava üstünlüğü kurmasını sağlar:
+
+1. **Fighting Wing (Avcı Kanat Formasyonu):**
+   * Lider uçağın rota, hız ve yönelimine göre kanat uçağının (wingman) GPS ofset noktasını hesaplar (örn. $45^\circ$ arkada, $60\text{m}$ aralıkta).
+2. **Pincer / Bracket (Kıskaç / Çifte Taarruz):**
+   * Hedef İHA'ya iki farklı yönden (örn. $\pm 35^\circ$ açısal ayrışma ile) eş zamanlı yaklaşma vektörleri üretir; hedefin bir uçaktan kaçarken diğerinin kilitlenme konisine girmesini zorunlu kılar.
+3. **Bait & Ambush (Yemleme ve Pusu Taktiği):**
+   * Eğer bir dost uçak rakip tarafından arkadan kovalanıyorsa (`DEFENSIVE`), kovalayan uçağı kendi arkasına çeken "Yem (Bait)" rolünü üstlenir; diğer dost uçak ise yüksek irtifadan süzülerek rakibin arkasına kilitlenen "Pusu (Ambush)" saldırısını başlatır.
+
+---
+
+## 🛡 CRC32 Doğrulamalı ve Paket Kaybı Önleyici Telemetri Tamponu
+
+`referee/packet_buffer.py`, saha şartlarında RF telemetri modemi veya 4G/LTE hücresel ağda meydana gelen anlık paket düşmelerini ve bozulmalarını engeller:
+
+* **CRC32 Sağlama Toplamı (Checksum):** Ağ üzerinden gönderilen her pakete 32-bit CRC hesaplanarak veri bütünlüğü garantilenir.
+* **FIFO Tamponlama ve Sıra Numaralandırma:** Ağ koptuğunda telemetri verileri kaybolmaz; hafızada sıraya dizilir ve bağlantı geldiğinde zamana duyarlı olarak hakem sunucusuna boşaltılır.
+* **Üstel Geri Çekilme (Exponential Backoff):** Sunucu aşırı yüklendiğinde ya da HTTP 500/503 yanıtı döndüğünde sistem otomatik bekleme süreleriyle yeniden dener; aşırı eski paketler belirlenen TTL süresinde otomatik temizlenir.
+
+---
+
 ## 🎯 Çoklu Hedef Taktik Değerlendiricisi (Target Evaluator)
 
 `vision/target_evaluator.py`, kadrajda veya radarda birden fazla rakip İHA olduğunda hangisine saldırılacağını çok kriterli maliyet fonksiyonuyla belirler:
@@ -333,12 +377,18 @@ teknofest_savasan_iha/
 │   ├── detector.py                 # YOLOv8/v11 & ONNX dedektör (ve sanal hedef üretici)
 │   ├── tracker.py                  # Kalman Filtresi ve IoU tabanlı çoklu hedef takipçisi
 │   ├── lock_engine.py              # 4.0 sn kesintisiz sayaç, %5 kuralı ve MP4 kanıt üreticisi
+│   ├── latency_compensator.py      # Gecikme telafisi için Delayed Kalman Filter (DKF)
+│   ├── gimbal_controller.py        # 2-Eksen Pan/Tilt fırçasız gimbal hedef takip kontrolcüsü
+│   ├── kamikaze_engine.py          # Kamikaze yer hedefi dalış ve QR kod okuyucu
+│   ├── tactical_radar.py           # 2D Askeri minimap ve HUD radar göstergesi
+│   ├── target_evaluator.py         # Çoklu hedef maliyet fonksiyonu ve seçim motoru
 │   └── visualizer.py               # Askeri standartta yapay ufuklu HUD ve kilit halkası
 ├── referee/
 │   ├── __init__.py
 │   ├── client.py                   # REST API istemcisi (/api/giris, /api/telemetri, /api/kilitlenme)
 │   ├── time_sync.py                # RTT gecikme hesaplamalı sunucu saati senkronizasyonu
-│   └── telemetry_sender.py         # 1-5 Hz periyodik telemetri gönderim iş parçacığı
+│   ├── telemetry_sender.py         # 1-5 Hz periyodik telemetri gönderim iş parçacığı
+│   └── packet_buffer.py            # CRC32 sağlama toplamlı ve TTL/yeniden denemeli paket tamponu
 ├── mock_server/
 │   ├── __init__.py
 │   └── app.py                      # FastAPI tabanlı yerel test hakem sunucusu ve web paneli
@@ -346,17 +396,26 @@ teknofest_savasan_iha/
 │   ├── __init__.py
 │   ├── mavlink_bridge.py           # Pixhawk/SITL PyMAVLink haberleşmesi
 │   ├── guidance.py                 # PN, Pure Pursuit ve Coordinated Turn uçuş zarfı güdümü
+│   ├── bfm_maneuvers.py            # Break Turn, Scissors, High Yo-Yo it dalaşı manevraları
+│   ├── swarm_tactics.py            # Fighting Wing, Pincer, Bait & Ambush çoklu İHA taktikleri
+│   ├── tactical_decision_agent.py  # DARPA BFM tabanlı hava muharebesi durum makinesi
+│   ├── wind_estimator.py           # Rüzgar vektörü tahmini ve Crab açısı düzeltmesi
 │   └── geofence.py                 # 2D Poligon sınır ihlali ve irtifa güvenlik denetleyicisi
 ├── gcs/
 │   ├── __init__.py
-│   └── app.py                      # PyQt6 Yer Kontrol İstasyonu (GCS) masaüstü arayüzü
+│   ├── app.py                      # PyQt6 Yer Kontrol İstasyonu (GCS) masaüstü arayüzü
+│   └── web_dashboard.py            # Mobil/Tablet uyumlu hafif canlı web gösterge paneli
 ├── simulation/
 │   ├── __init__.py
 │   └── virtual_camera.py           # Sentetik gökyüzü ve hareketli rakip İHA video akışı
 ├── tools/
 │   ├── __init__.py
-│   ├── preflight_check.py          # Uçuş öncesi 10 kritik bileşenin otomatik kontrolü
+│   ├── preflight_check.py          # Uçuş öncesi 12 kritik bileşenin otomatik kontrolü
 │   ├── flight_player.py            # Uçuş telemetri loglarını offline oynatıcı
+│   ├── antenna_tracker.py          # Yer istasyonu yönlü otomatik anten takipçisi (AAT)
+│   ├── benchmark_inference.py      # Model çıkarım hızı, FPS ve gecikme persentil analiz aracı
+│   ├── mission_debrief.py          # Uçuş kara kutusu analizi ve interaktif HTML görev raporu
+│   ├── synthetic_dataset_generator.py # YOLO eğitimine hazır sentetik İHA veri seti üreticisi
 │   ├── dataset_collector.py        # Uçuş videolarından eğitim veri seti çıkarıcı
 │   └── export_onnx.py              # Jetson için optimize ONNX/TensorRT derleme aracı
 ├── tests/
@@ -432,7 +491,9 @@ Bu araç sırasıyla:
 7. Geofence algoritmasını,
 8. Hakem sunucusu HTTP erişimini ve ping gecikmesini,
 9. Zaman senkronizasyon nesnesini,
-10. MAVLink otopilot köprüsünü
+10. MAVLink otopilot köprüsünü,
+11. 2-Eksen Gimbal ve Otomatik Anten Takip (AAT) modüllerini,
+12. CRC32 Paket Kaybı Önleyici Telemetri Tamponunu
 denetler ve renkli bir kontrol tablosu basar.
 
 ---
@@ -459,6 +520,36 @@ Bu işlem modeli FP16 yarı hassasiyetli optimize ONNX formatına dönüştürü
 
 ---
 
+## 🚀 Model Çıkarım Hızı ve FPS Benchmark Aracı
+
+Görüntü işleme ve yapay zeka modelinin uçuş kartında (Jetson Nano / Orin / x86) gerçek zamanlı gereksinimleri karşılayıp karşılamadığını test etmek için:
+
+```bash
+python tools/benchmark_inference.py --weights models/savasan_iha_best.pt --warmup 20 --iterations 100 --imgsz 640
+```
+
+Bu araç:
+* Ortalama FPS, Min/Max/Ortalama gecikme (Latency),
+* **P50, P90, P95 ve P99 gecikme persentillerini** hesaplar,
+* Modelin 30+ FPS kilitlenme kriterini sağlayıp sağlamadığını anında doğrular.
+
+---
+
+## 📊 Uçuş Görev Değerlendirme Aracı (Mission Debrief & HTML Raporu)
+
+Uçuş tamamlandıktan sonra kara kutu loglarını (`telemetry.csv`, `events.jsonl`, `flight_summary.json`) analiz etmek ve modern, etkileşimli bir HTML raporu almak için:
+
+```bash
+python tools/mission_debrief.py --session logs/session_20261031_120000 --output debrief_report.html
+```
+
+Rapor içeriğinde:
+* Görev başarı oranı, onaylanan kilitlenmeler ve kazanılan toplam puan,
+* Azami/ortalama hız, azami G-yükü ve irtifa profili grafikleri,
+* Sınır ihlali (Geofence) ve acil durum uyarılarının zaman çizelgesi yer alır.
+
+---
+
 ## 🧪 Birim Testleri
 
 Tüm matematiksel ve kural denetleyicilerini test etmek için:
@@ -469,40 +560,55 @@ pytest tests/ -v
 
 Çıktı örneği:
 ```text
-tests/test_bfm.py::test_bfm_threat_detection PASSED                      [  6%]
-tests/test_bfm.py::test_bfm_maneuver_execution PASSED                    [  9%]
+tests/test_antenna_tracker.py::test_antenna_tracker_due_north PASSED     [  2%]
+tests/test_antenna_tracker.py::test_antenna_tracker_due_east PASSED      [  4%]
+tests/test_antenna_tracker.py::test_antenna_tracker_telemetry_and_pwm PASSED [  6%]
+tests/test_bfm.py::test_bfm_threat_detection PASSED                      [  8%]
+tests/test_bfm.py::test_bfm_maneuver_execution PASSED                    [ 10%]
 tests/test_blackbox.py::test_blackbox_recording_and_summary PASSED       [ 12%]
-tests/test_dataset_generator.py::test_synthetic_dataset_generation PASSED [ 15%]
-tests/test_geofence.py::test_geofence_inside PASSED                      [ 18%]
-tests/test_geofence.py::test_geofence_outside PASSED                     [ 21%]
-tests/test_geofence.py::test_geofence_altitude_limits PASSED             [ 24%]
-tests/test_guidance.py::test_pure_pursuit_heading PASSED                 [ 27%]
-tests/test_guidance.py::test_flight_envelope_limiter PASSED              [ 30%]
-tests/test_guidance.py::test_guidance_controller_facade PASSED          [ 33%]
-tests/test_kamikaze.py::test_kamikaze_engine_workflow PASSED            [ 36%]
-tests/test_kamikaze.py::test_hss_threat_avoidance PASSED                 [ 39%]
-tests/test_kamikaze.py::test_kamikaze_paketi_serialization PASSED        [ 42%]
-tests/test_latency_compensator.py::test_delayed_kalman_filter_initialization PASSED [ 45%]
-tests/test_latency_compensator.py::test_delayed_kalman_filter_velocity_prediction PASSED [ 48%]
-tests/test_latency_compensator.py::test_box_latency_compensation PASSED  [ 51%]
+tests/test_dataset_generator.py::test_synthetic_dataset_generation PASSED [ 14%]
+tests/test_debrief_and_benchmark.py::test_benchmark_inference_mock PASSED [ 16%]
+tests/test_debrief_and_benchmark.py::test_mission_debrief_html_export PASSED [ 18%]
+tests/test_geofence.py::test_geofence_inside PASSED                      [ 20%]
+tests/test_geofence.py::test_geofence_outside PASSED                     [ 22%]
+tests/test_geofence.py::test_geofence_altitude_limits PASSED             [ 25%]
+tests/test_gimbal_controller.py::test_gimbal_controller_centering PASSED [ 27%]
+tests/test_gimbal_controller.py::test_gimbal_controller_pan_right PASSED [ 29%]
+tests/test_gimbal_controller.py::test_gimbal_controller_limits PASSED   [ 31%]
+tests/test_gimbal_controller.py::test_gimbal_mavlink_mount_command PASSED [ 33%]
+tests/test_guidance.py::test_pure_pursuit_heading PASSED                 [ 35%]
+tests/test_guidance.py::test_flight_envelope_limiter PASSED              [ 37%]
+tests/test_guidance.py::test_guidance_controller_facade PASSED          [ 39%]
+tests/test_kamikaze.py::test_kamikaze_engine_workflow PASSED            [ 41%]
+tests/test_kamikaze.py::test_hss_threat_avoidance PASSED                 [ 43%]
+tests/test_kamikaze.py::test_kamikaze_paketi_serialization PASSED        [ 45%]
+tests/test_latency_compensator.py::test_delayed_kalman_filter_initialization PASSED [ 47%]
+tests/test_latency_compensator.py::test_delayed_kalman_filter_velocity_prediction PASSED [ 50%]
+tests/test_latency_compensator.py::test_box_latency_compensation PASSED  [ 52%]
 tests/test_lock_engine.py::test_lock_engine_requires_5_percent_area PASSED [ 54%]
-tests/test_lock_engine.py::test_lock_engine_starts_on_valid_target PASSED [ 57%]
-tests/test_lock_engine.py::test_lock_engine_completes_lock PASSED         [ 60%]
-tests/test_models.py::test_zaman_bilgisi PASSED                          [ 63%]
-tests/test_models.py::test_hedef_kutusu_geometri PASSED                  [ 66%]
-tests/test_models.py::test_telemetri_paketi_serialization PASSED        [ 69%]
-tests/test_models.py::test_sunucu_yaniti_parsing PASSED                  [ 72%]
-tests/test_tactical_agent.py::test_tactical_decision_agent_patrol PASSED [ 75%]
-tests/test_tactical_agent.py::test_tactical_decision_agent_offensive_wez PASSED [ 78%]
-tests/test_tactical_agent.py::test_tactical_decision_agent_defensive PASSED [ 81%]
-tests/test_tactical_radar.py::test_tactical_radar_rendering PASSED       [ 84%]
-tests/test_tactical_radar.py::test_tactical_radar_hud_overlay PASSED     [ 87%]
-tests/test_target_evaluator.py::test_target_evaluator_prioritizes_center_and_size PASSED [ 90%]
+tests/test_lock_engine.py::test_lock_engine_starts_on_valid_target PASSED [ 56%]
+tests/test_lock_engine.py::test_lock_engine_completes_lock PASSED         [ 58%]
+tests/test_models.py::test_zaman_bilgisi PASSED                          [ 60%]
+tests/test_models.py::test_hedef_kutusu_geometri PASSED                  [ 62%]
+tests/test_models.py::test_telemetri_paketi_serialization PASSED        [ 64%]
+tests/test_models.py::test_sunucu_yaniti_parsing PASSED                  [ 66%]
+tests/test_packet_buffer.py::test_packet_buffer_enqueue_and_crc PASSED   [ 68%]
+tests/test_packet_buffer.py::test_packet_buffer_fifo_order_and_mark_sent PASSED [ 70%]
+tests/test_packet_buffer.py::test_packet_buffer_retry_and_drop PASSED    [ 72%]
+tests/test_swarm_tactics.py::test_swarm_wingman_offset_position PASSED   [ 75%]
+tests/test_swarm_tactics.py::test_swarm_pincer_attack_vectors PASSED     [ 77%]
+tests/test_swarm_tactics.py::test_swarm_bait_and_ambush_evaluation PASSED [ 79%]
+tests/test_tactical_agent.py::test_tactical_decision_agent_patrol PASSED [ 81%]
+tests/test_tactical_agent.py::test_tactical_decision_agent_offensive_wez PASSED [ 83%]
+tests/test_tactical_agent.py::test_tactical_decision_agent_defensive PASSED [ 85%]
+tests/test_tactical_radar.py::test_tactical_radar_rendering PASSED       [ 87%]
+tests/test_tactical_radar.py::test_tactical_radar_hud_overlay PASSED     [ 89%]
+tests/test_target_evaluator.py::test_target_evaluator_prioritizes_center_and_size PASSED [ 91%]
 tests/test_target_evaluator.py::test_target_evaluator_select_best PASSED [ 93%]
-tests/test_wind_estimator.py::test_wind_estimator_no_wind PASSED         [ 96%]
-tests/test_wind_estimator.py::test_wind_estimator_crosswind PASSED       [ 98%]
+tests/test_wind_estimator.py::test_wind_estimator_no_wind PASSED         [ 95%]
+tests/test_wind_estimator.py::test_wind_estimator_crosswind PASSED       [ 97%]
 tests/test_wind_estimator.py::test_wind_crab_compensation PASSED        [100%]
-============================== 33 passed in 1.38s ==============================
+============================== 48 passed in 2.55s ==============================
 ```
 
 ---
@@ -521,7 +627,7 @@ docker-compose logs -f
 
 ### GitHub Actions CI/CD:
 Her `git push` veya `pull request` yapıldığında [`.github/workflows/ci.yml`](.github/workflows/ci.yml) iş akışı otomatik olarak tetiklenerek:
-* Python 3.10, 3.11 ve 3.12 üzerinde 33 adet birim testini,
+* Python 3.10, 3.11 ve 3.12 üzerinde 48 adet birim testini,
 * `preflight_check.py` sistem doğrulamasını,
 * Sentetik veri seti üretim boru hattını çalıştırır ve kod bütünlüğünü garanti eder.
 

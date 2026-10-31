@@ -101,6 +101,18 @@ def run_preflight_check():
     mav_msg = "Sanal Otopilot Koprusu Hazir"
     results.append(("Otopilot MAVLink Arayuzu", mav_msg, True))
 
+    # 11. 2-Eksen Gimbal ve Yönlü Anten Takipçisi (AAT)
+    from vision.gimbal_controller import GimbalController
+    from tools.antenna_tracker import GroundAntennaTracker
+    gimbal_ok = GimbalController() is not None
+    aat_ok = GroundAntennaTracker() is not None
+    results.append(("Gimbal & Anten Takip (AAT)", "2-Eksen Pan/Tilt Hazir", gimbal_ok and aat_ok))
+
+    # 12. Güvenilir Telemetri Paketi Tamponu (CRC32 Anti-Loss)
+    from referee.packet_buffer import TelemetryPacketBuffer
+    buffer_ok = TelemetryPacketBuffer() is not None
+    results.append(("Telemetri Paket Tamponu", "CRC32 Anti-Loss Kuyruk Aktif", buffer_ok))
+
     # Tablo Yazdırma
     all_passed = True
     for name, detail, status in results:

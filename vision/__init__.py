@@ -9,6 +9,7 @@ from .latency_compensator import DelayedKalmanFilter
 from .kamikaze_engine import KamikazeEngine
 from .target_evaluator import TacticalTargetEvaluator
 from .tactical_radar import TacticalRadarMinimap
+from .gimbal_controller import GimbalController
 
 __all__ = [
     "YoloDetector",
@@ -19,5 +20,6 @@ __all__ = [
     "DelayedKalmanFilter",
     "KamikazeEngine",
     "TacticalTargetEvaluator",
-    "TacticalRadarMinimap"
+    "TacticalRadarMinimap",
+    "GimbalController"
 ]

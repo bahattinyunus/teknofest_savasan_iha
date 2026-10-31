@@ -1,5 +1,5 @@
 import time
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any, Tuple, List
 import requests
 
 from core.models import (

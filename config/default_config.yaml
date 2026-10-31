@@ -83,3 +83,29 @@ geofence:
     - [41.1080, 28.9000]
   uyari_mesafesi_m: 25.0        # Sinira bu kadar metre kala ikaz ver ve otonom donus planla
   hss_engelleme_aktif: true     # Hava Savunma Sistemi (HSS) tehdit hacimlerinden otonom kacinma
+
+gimbal:
+  aktif: true                   # 2 Eksenli (Pan/Tilt) Hedef Takip Gimbalı
+  fov_h_deg: 78.0
+  fov_v_deg: 46.0
+  pan_limit_deg: 60.0
+  tilt_min_deg: -45.0
+  tilt_max_deg: 25.0
+
+anten_takip:
+  aktif: true                   # Yer İstasyonu Yönlü Anten Takipçisi (AAT)
+  home_lat: 41.1000
+  home_lon: 28.9000
+  home_alt_m: 40.0
+  min_elevation_deg: 0.0
+  max_elevation_deg: 85.0
+
+suru_taktikleri:
+  aktif: false                  # Coklu IHA Sürü ve Ortaklasa Hava Muharebesi
+  formasyon: "FIGHTING_WING"    # FIGHTING_WING, PINCER_BRACKET, BAIT_AMBUSH
+  rol: "LEADER"                 # LEADER, WINGMAN, BAIT, HUNTER
+  ayrilma_mesafesi_m: 40.0
+
+paket_tamponu:
+  maks_tampon_boyutu: 500       # Ag kopmasinda hafizada tutulacak azami paket sayisi
+  maks_tekrar_deneme: 3         # Paketin tekrar sunucuya iletilme deneme limiti
