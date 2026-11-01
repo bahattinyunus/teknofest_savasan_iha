@@ -485,6 +485,7 @@ teknofest_savasan_iha/
 │   └── test_guidance.py            # Güdüm ve uçuş zarfı limit testleri
 ├── docs/
 │   ├── YARISMA_REHBERI.md          # Taktikler, kural özetleri ve saha ipuçları
+│   ├── RAKIP_ANALIZI_VE_KURESEL_BENCHMARK.md # Rakip takım analizi, küresel yarışmalar ve kaynak repolar
 │   ├── DONANIM_LISTESI.md          # Detaylı donanım ve sensör listesi
 │   ├── HABERLESME_PROTOKOLU.md     # JSON şemaları ve HTTP hata analizleri
 │   └── MAVLINK_REHBERI.md          # ArduPilot SITL ve Mission Planner kılavuzu
