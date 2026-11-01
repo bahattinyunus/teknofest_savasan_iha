@@ -96,10 +96,10 @@ class TelemetriPaketi:
     IHA_batarya: int            # Kalan batarya yüzdesi (%0-100)
     IHA_otonom: int             # 1: Otonom mod, 0: Manuel
     IHA_kilitlenme: int         # 1: Kilitlenme gerçekleşiyor/gerçekleşti, 0: Yok
-    Hedef_merkez_X: int         # Hedefin piksel merkez X koordinatı (Hedef yoksa 0)
-    Hedef_merkez_Y: int         # Hedefin piksel merkez Y koordinatı (Hedef yoksa 0)
-    Hedef_genislik: int         # Hedef kutusu piksel genişliği
-    Hedef_yukseklik: int        # Hedef kutusu piksel yüksekliği
+    Hedef_merkez_X: int = 0         # Hedefin piksel merkez X koordinatı (Hedef yoksa 0)
+    Hedef_merkez_Y: int = 0         # Hedefin piksel merkez Y koordinatı (Hedef yoksa 0)
+    Hedef_genislik: int = 0         # Hedef kutusu piksel genişliği
+    Hedef_yukseklik: int = 0        # Hedef kutusu piksel yüksekliği
     GPSSaati: ZamanBilgisi = field(default_factory=ZamanBilgisi.now)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -132,6 +132,9 @@ class RakipIHABilgisi:
             IHA_yatis=float(data.get("IHA_yatis", 0.0)),
             zaman_farki=int(data.get("zaman_farki", 0)),
         )
+
+
+RakipIHA = RakipIHABilgisi  # Kolay erişim için takma ad (alias)
 
 
 @dataclass

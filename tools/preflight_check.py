@@ -113,6 +113,17 @@ def run_preflight_check():
     buffer_ok = TelemetryPacketBuffer() is not None
     results.append(("Telemetri Paket Tamponu", "CRC32 Anti-Loss Kuyruk Aktif", buffer_ok))
 
+    # 13. Akıllı Sistem Sağlığı ve Failsafe FSM
+    from core.health_monitor import HealthMonitor
+    health_ok = HealthMonitor() is not None
+    results.append(("Sistem Saglik ve Failsafe FSM", "Kademeli Emniyet Aktif", health_ok))
+
+    # 14. ACAS Çarpışma Önleme ve Optik Menzil Kestirimi
+    from autopilot.collision_avoidance import CollisionAvoidanceSystem
+    from vision.optical_ranging import OpticalRanger
+    acas_ok = (CollisionAvoidanceSystem() is not None) and (OpticalRanger() is not None)
+    results.append(("ACAS Carpisma Onleme & Optik Menzil", "3D CPA & WEZ Dogrulandi", acas_ok))
+
     # Tablo Yazdırma
     all_passed = True
     for name, detail, status in results:

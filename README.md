@@ -8,7 +8,7 @@
 [![Autopilot](https://img.shields.io/badge/Autopilot-ArduPilot%20%2F%20PX4%20(MAVLink)-1E88E5)](https://ardupilot.org/)
 [![FastAPI](https://img.shields.io/badge/Mock%20Server-FastAPI%20%2F%20Uvicorn-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![GUI](https://img.shields.io/badge/GCS%20GUI-PyQt6-41CD52?logo=qt&logoColor=white)](https://riverbankcomputing.com/software/pyqt/)
-[![Tests](https://img.shields.io/badge/Tests-48%20Passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-61%20Passed-brightgreen)](tests/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](Dockerfile)
 [![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
@@ -326,6 +326,60 @@ Rüzgar yan bileşeni ($V_{\text{crosswind}}$) hesaplanarak pusula rotasına **C
 
 ---
 
+## 🛡 Akıllı Sistem Sağlığı ve Kademeli Fail-Safe İzleyicisi
+
+`core/health_monitor.py`, kritik uçuş emniyet parametrelerini eşzamanlı izleyerek çok kademeli bir acil durum durum makinesi (FSM) işletir:
+
+* **İzlenen Metrikler:** Batarya yüzdesi/voltajı/hücre farkı, MAVLink kalp atışı (heartbeat) yaşı, GPS Fix tipi & HDOP, Hakem sunucusu RTT ve ardışık yanıt gecikmesi, CPU/RAM yükü, CPU çekirdek sıcaklığı ve kamera FPS akışı.
+* **Kademeli Eskalasyon Merdiveni:**
+  * `NOMINAL`: Tüm alt sistemler ideal parametrelerde.
+  * `ADVISORY`: Düşük öncelikli ikaz (örn. Kamera FPS < 15, CPU sıcaklığı > 70°C).
+  * `WARNING`: Batarya < %25 veya telemetri gecikmesi > 5 sn -> Otonom muharebeden ayrılma (`DISENGAGE_COMBAT`).
+  * `CRITICAL`: Batarya < %15 veya link kaybı > 15 sn -> Güvenli irtifada daire çizme (`LOITER`) ya da otonom üsse dönüş (`RTL`).
+  * `EMERGENCY`: Batarya < %10 veya tam link kaybı > 30 sn -> Derhal acil iniş (`LAND_IMMEDIATE`) veya motor durdurma (`TERMINATE`).
+
+---
+
+## 🎯 Monoküler Görsel Hedef Menzil ve 3D NED Kestirimi
+
+`vision/optical_ranging.py`, uçakta aktif lazer veya radar sensörü bulunmadığı durumlarda kamera iğne deliği (pinhole) optik modeli ve bilinen hedef kanat açıklığı ($W_{\text{real}} = 1.2\text{ m}$) üzerinden hedefin 3D bağıl menzilini hesaplar:
+
+$$Z = \frac{f_x \cdot W_{\text{real}}}{w_{\text{bbox}}}, \quad X_c = \frac{(u - c_x) \cdot Z}{f_x}, \quad Y_c = \frac{(v - c_y) \cdot Z}{f_y}$$
+$$R_{\text{slant}} = \sqrt{X_c^2 + Y_c^2 + Z_c^2}$$
+
+* **Gövde ve NED Dönüşümü:** Uçağın anlık Roll ($\phi$), Pitch ($\theta$) ve Yaw ($\psi$) Euler açıları kullanılarak kamera koordinatları Dünya Kuzey-Doğu-Aşağı (NED) koordinatlarına çevrilir.
+* **WEZ (Weapon Engagement Zone) Doğrulaması:** Hedefin etkili kilitlenme küresi ($15\text{m} \le R \le 120\text{m}$) ve nişangah görüş açısı ($\le 25^\circ$) içinde olup olmadığı anında doğrulanır.
+
+---
+
+## ✈️ Havada Çarpışma Önleme Sistemi (ACAS / TCAS & CPA Hız Engeli)
+
+`autopilot/collision_avoidance.py`, dar bir yarışma hava sahasında uçan 4-8 rakip İHA arasında oluşabilecek havada çarpışma (mid-air collision) riskini bertaraf eder:
+
+* **En Yakın Yaklaşma Noktası (CPA):**
+  $$\tau_{\text{cpa}} = - \frac{\vec{r} \cdot \vec{v}_{\text{rel}}}{|\vec{v}_{\text{rel}}|^2}, \quad d_{\text{cpa}} = |\vec{r} + \vec{v}_{\text{rel}} \cdot \tau_{\text{cpa}}|$$
+* **Kademeli Tehdit Analizi:**
+  * **Traffic Advisory (TA):** $d \le 75\text{m}$ veya $\tau_{\text{cpa}} \le 8.0\text{ s}$ olduğunda durum farkındalığı uyarısı üretir.
+  * **Resolution Advisory (RA):** $d_{\text{cpa}} \le 25\text{m}$ ve $\tau_{\text{cpa}} \le 4.5\text{ s}$ kritik çarpışma rotasında devreye girer.
+* **Koordineli Kaçınma Manevraları:**
+  * Dikey Düzlem: Rakip üstteyse otonom Alçalma (`DESCEND`), alttaysa Tırmanma (`CLIMB`).
+  * Yatay Düzlem: Rakibin bağıl pusula kerterizine (bearing) göre zıt yöne $\pm 35^\circ$ sert kaçınma dönüşü (`TURN_LEFT` / `TURN_RIGHT`).
+
+---
+
+## 🎮 3D Taktik İt Dalaşı ve Hava Muharebesi Simülatörü
+
+`simulation/dogfight_simulator.py`, sahaya çıkmadan önce yazılım algoritmalarını ve güdüm parametrelerini test etmek için Mavi (bizim İHA'mız) ve Kırmızı (rakip İHA) arasındaki 1v1 it dalaşını simüle eder:
+
+* **Hedef Kaçınma Davranışları:** Sabit daire (`ORBIT`), sinüzoidal makas (`WEAVE`), agresif yüksek-G dönüşleri (`AGGRESSIVE_BFM`) ve kafa kafaya geçiş (`HEAD_ON`).
+* **Sanal Kamera İzdüşümü:** 3D uzaydaki rakip uçağın Mavi İHA kamerasındaki piksel koordinatlarını ve %5 ekran alanını dinamik izdüşür.
+* **Terminalden Test:**
+  ```bash
+  python -m simulation.dogfight_simulator --duration 10 --behavior WEAVE
+  ```
+
+---
+
 ## 🎯 Çoklu Hedef Taktik Değerlendiricisi (Target Evaluator)
 
 `vision/target_evaluator.py`, kadrajda veya radarda birden fazla rakip İHA olduğunda hangisine saldırılacağını çok kriterli maliyet fonksiyonuyla belirler:
@@ -371,13 +425,16 @@ teknofest_savasan_iha/
 │   ├── __init__.py
 │   ├── models.py                   # Şartnameyle 1:1 uyumlu Telemetri, Kilit, Rakip İHA modelleri
 │   ├── logger.py                   # Renkli konsol ve döngüsel dosya loglayıcısı
-│   └── event_bus.py                # Thread-safe pub/sub asenkron olay köprüsü
+│   ├── event_bus.py                # Thread-safe pub/sub asenkron olay köprüsü
+│   ├── blackbox.py                 # Yüksek hızlı CSV/JSONL uçuş kara kutu kaydedicisi
+│   └── health_monitor.py           # Akıllı sistem sağlığı ve kademeli fail-safe durum makinesi
 ├── vision/
 │   ├── __init__.py
 │   ├── detector.py                 # YOLOv8/v11 & ONNX dedektör (ve sanal hedef üretici)
 │   ├── tracker.py                  # Kalman Filtresi ve IoU tabanlı çoklu hedef takipçisi
 │   ├── lock_engine.py              # 4.0 sn kesintisiz sayaç, %5 kuralı ve MP4 kanıt üreticisi
 │   ├── latency_compensator.py      # Gecikme telafisi için Delayed Kalman Filter (DKF)
+│   ├── optical_ranging.py          # Pinhole optik modeli ile 3D menzil ve NED konum kestirimi
 │   ├── gimbal_controller.py        # 2-Eksen Pan/Tilt fırçasız gimbal hedef takip kontrolcüsü
 │   ├── kamikaze_engine.py          # Kamikaze yer hedefi dalış ve QR kod okuyucu
 │   ├── tactical_radar.py           # 2D Askeri minimap ve HUD radar göstergesi
@@ -397,6 +454,7 @@ teknofest_savasan_iha/
 │   ├── mavlink_bridge.py           # Pixhawk/SITL PyMAVLink haberleşmesi
 │   ├── guidance.py                 # PN, Pure Pursuit ve Coordinated Turn uçuş zarfı güdümü
 │   ├── bfm_maneuvers.py            # Break Turn, Scissors, High Yo-Yo it dalaşı manevraları
+│   ├── collision_avoidance.py      # ACAS / TCAS CPA ve hız engeli (VO) çarpışma önleyici
 │   ├── swarm_tactics.py            # Fighting Wing, Pincer, Bait & Ambush çoklu İHA taktikleri
 │   ├── tactical_decision_agent.py  # DARPA BFM tabanlı hava muharebesi durum makinesi
 │   ├── wind_estimator.py           # Rüzgar vektörü tahmini ve Crab açısı düzeltmesi
@@ -407,10 +465,11 @@ teknofest_savasan_iha/
 │   └── web_dashboard.py            # Mobil/Tablet uyumlu hafif canlı web gösterge paneli
 ├── simulation/
 │   ├── __init__.py
-│   └── virtual_camera.py           # Sentetik gökyüzü ve hareketli rakip İHA video akışı
+│   ├── virtual_camera.py           # Sentetik gökyüzü ve hareketli rakip İHA video akışı
+│   └── dogfight_simulator.py       # 3D 1v1 Mavi/Kırmızı İHA it dalaşı simülatörü
 ├── tools/
 │   ├── __init__.py
-│   ├── preflight_check.py          # Uçuş öncesi 12 kritik bileşenin otomatik kontrolü
+│   ├── preflight_check.py          # Uçuş öncesi 14 kritik bileşenin otomatik kontrolü
 │   ├── flight_player.py            # Uçuş telemetri loglarını offline oynatıcı
 │   ├── antenna_tracker.py          # Yer istasyonu yönlü otomatik anten takipçisi (AAT)
 │   ├── benchmark_inference.py      # Model çıkarım hızı, FPS ve gecikme persentil analiz aracı
@@ -493,7 +552,9 @@ Bu araç sırasıyla:
 9. Zaman senkronizasyon nesnesini,
 10. MAVLink otopilot köprüsünü,
 11. 2-Eksen Gimbal ve Otomatik Anten Takip (AAT) modüllerini,
-12. CRC32 Paket Kaybı Önleyici Telemetri Tamponunu
+12. CRC32 Paket Kaybı Önleyici Telemetri Tamponunu,
+13. Akıllı Sistem Sağlığı ve Kademeli Failsafe Durum Makinesini,
+14. ACAS Çarpışma Önleme ve Optik Menzil Kestirimi algoritmalarını
 denetler ve renkli bir kontrol tablosu basar.
 
 ---
@@ -560,55 +621,68 @@ pytest tests/ -v
 
 Çıktı örneği:
 ```text
-tests/test_antenna_tracker.py::test_antenna_tracker_due_north PASSED     [  2%]
-tests/test_antenna_tracker.py::test_antenna_tracker_due_east PASSED      [  4%]
-tests/test_antenna_tracker.py::test_antenna_tracker_telemetry_and_pwm PASSED [  6%]
-tests/test_bfm.py::test_bfm_threat_detection PASSED                      [  8%]
-tests/test_bfm.py::test_bfm_maneuver_execution PASSED                    [ 10%]
-tests/test_blackbox.py::test_blackbox_recording_and_summary PASSED       [ 12%]
-tests/test_dataset_generator.py::test_synthetic_dataset_generation PASSED [ 14%]
-tests/test_debrief_and_benchmark.py::test_benchmark_inference_mock PASSED [ 16%]
-tests/test_debrief_and_benchmark.py::test_mission_debrief_html_export PASSED [ 18%]
-tests/test_geofence.py::test_geofence_inside PASSED                      [ 20%]
-tests/test_geofence.py::test_geofence_outside PASSED                     [ 22%]
-tests/test_geofence.py::test_geofence_altitude_limits PASSED             [ 25%]
-tests/test_gimbal_controller.py::test_gimbal_controller_centering PASSED [ 27%]
-tests/test_gimbal_controller.py::test_gimbal_controller_pan_right PASSED [ 29%]
-tests/test_gimbal_controller.py::test_gimbal_controller_limits PASSED   [ 31%]
-tests/test_gimbal_controller.py::test_gimbal_mavlink_mount_command PASSED [ 33%]
-tests/test_guidance.py::test_pure_pursuit_heading PASSED                 [ 35%]
-tests/test_guidance.py::test_flight_envelope_limiter PASSED              [ 37%]
-tests/test_guidance.py::test_guidance_controller_facade PASSED          [ 39%]
-tests/test_kamikaze.py::test_kamikaze_engine_workflow PASSED            [ 41%]
-tests/test_kamikaze.py::test_hss_threat_avoidance PASSED                 [ 43%]
-tests/test_kamikaze.py::test_kamikaze_paketi_serialization PASSED        [ 45%]
-tests/test_latency_compensator.py::test_delayed_kalman_filter_initialization PASSED [ 47%]
-tests/test_latency_compensator.py::test_delayed_kalman_filter_velocity_prediction PASSED [ 50%]
-tests/test_latency_compensator.py::test_box_latency_compensation PASSED  [ 52%]
-tests/test_lock_engine.py::test_lock_engine_requires_5_percent_area PASSED [ 54%]
-tests/test_lock_engine.py::test_lock_engine_starts_on_valid_target PASSED [ 56%]
-tests/test_lock_engine.py::test_lock_engine_completes_lock PASSED         [ 58%]
-tests/test_models.py::test_zaman_bilgisi PASSED                          [ 60%]
-tests/test_models.py::test_hedef_kutusu_geometri PASSED                  [ 62%]
-tests/test_models.py::test_telemetri_paketi_serialization PASSED        [ 64%]
-tests/test_models.py::test_sunucu_yaniti_parsing PASSED                  [ 66%]
-tests/test_packet_buffer.py::test_packet_buffer_enqueue_and_crc PASSED   [ 68%]
-tests/test_packet_buffer.py::test_packet_buffer_fifo_order_and_mark_sent PASSED [ 70%]
-tests/test_packet_buffer.py::test_packet_buffer_retry_and_drop PASSED    [ 72%]
-tests/test_swarm_tactics.py::test_swarm_wingman_offset_position PASSED   [ 75%]
-tests/test_swarm_tactics.py::test_swarm_pincer_attack_vectors PASSED     [ 77%]
-tests/test_swarm_tactics.py::test_swarm_bait_and_ambush_evaluation PASSED [ 79%]
-tests/test_tactical_agent.py::test_tactical_decision_agent_patrol PASSED [ 81%]
-tests/test_tactical_agent.py::test_tactical_decision_agent_offensive_wez PASSED [ 83%]
-tests/test_tactical_agent.py::test_tactical_decision_agent_defensive PASSED [ 85%]
-tests/test_tactical_radar.py::test_tactical_radar_rendering PASSED       [ 87%]
-tests/test_tactical_radar.py::test_tactical_radar_hud_overlay PASSED     [ 89%]
-tests/test_target_evaluator.py::test_target_evaluator_prioritizes_center_and_size PASSED [ 91%]
-tests/test_target_evaluator.py::test_target_evaluator_select_best PASSED [ 93%]
-tests/test_wind_estimator.py::test_wind_estimator_no_wind PASSED         [ 95%]
-tests/test_wind_estimator.py::test_wind_estimator_crosswind PASSED       [ 97%]
-tests/test_wind_estimator.py::test_wind_crab_compensation PASSED        [100%]
-============================== 48 passed in 2.55s ==============================
+tests/test_antenna_tracker.py::test_antenna_tracker_due_north PASSED     [  1%]
+tests/test_antenna_tracker.py::test_antenna_tracker_due_east PASSED      [  3%]
+tests/test_antenna_tracker.py::test_antenna_tracker_telemetry_and_pwm PASSED [  4%]
+tests/test_bfm.py::test_bfm_threat_detection PASSED                      [  6%]
+tests/test_bfm.py::test_bfm_maneuver_execution PASSED                    [  8%]
+tests/test_blackbox.py::test_blackbox_recording_and_summary PASSED       [  9%]
+tests/test_collision_avoidance.py::test_acas_clear_when_far PASSED       [ 11%]
+tests/test_collision_avoidance.py::test_acas_traffic_advisory PASSED     [ 13%]
+tests/test_collision_avoidance.py::test_acas_resolution_advisory_head_on PASSED [ 14%]
+tests/test_dataset_generator.py::test_synthetic_dataset_generation PASSED [ 16%]
+tests/test_debrief_and_benchmark.py::test_benchmark_inference_mock PASSED [ 18%]
+tests/test_debrief_and_benchmark.py::test_mission_debrief_html_export PASSED [ 19%]
+tests/test_dogfight_simulator.py::test_dogfight_simulator_initialization PASSED [ 21%]
+tests/test_dogfight_simulator.py::test_dogfight_simulator_single_step PASSED [ 22%]
+tests/test_dogfight_simulator.py::test_dogfight_simulator_run_batch PASSED [ 24%]
+tests/test_geofence.py::test_geofence_inside PASSED                      [ 26%]
+tests/test_geofence.py::test_geofence_outside PASSED                     [ 27%]
+tests/test_geofence.py::test_geofence_altitude_limits PASSED             [ 29%]
+tests/test_gimbal_controller.py::test_gimbal_controller_centering PASSED [ 31%]
+tests/test_gimbal_controller.py::test_gimbal_controller_pan_right PASSED [ 32%]
+tests/test_gimbal_controller.py::test_gimbal_controller_limits PASSED    [ 34%]
+tests/test_gimbal_controller.py::test_gimbal_mavlink_mount_command PASSED [ 36%]
+tests/test_guidance.py::test_pure_pursuit_heading PASSED                 [ 37%]
+tests/test_guidance.py::test_flight_envelope_limiter PASSED              [ 39%]
+tests/test_guidance.py::test_guidance_controller_facade PASSED           [ 40%]
+tests/test_health_monitor.py::test_health_monitor_nominal PASSED         [ 42%]
+tests/test_health_monitor.py::test_health_monitor_battery_escalation PASSED [ 44%]
+tests/test_health_monitor.py::test_health_monitor_link_loss_and_callbacks PASSED [ 45%]
+tests/test_health_monitor.py::test_health_monitor_host_sample PASSED     [ 47%]
+tests/test_kamikaze.py::test_kamikaze_engine_workflow PASSED             [ 49%]
+tests/test_kamikaze.py::test_hss_threat_avoidance PASSED                 [ 50%]
+tests/test_kamikaze.py::test_kamikaze_paketi_serialization PASSED        [ 52%]
+tests/test_latency_compensator.py::test_delayed_kalman_filter_initialization PASSED [ 54%]
+tests/test_latency_compensator.py::test_delayed_kalman_filter_velocity_prediction PASSED [ 55%]
+tests/test_latency_compensator.py::test_box_latency_compensation PASSED  [ 57%]
+tests/test_lock_engine.py::test_lock_engine_requires_5_percent_area PASSED [ 59%]
+tests/test_lock_engine.py::test_lock_engine_starts_on_valid_target PASSED [ 60%]
+tests/test_lock_engine.py::test_lock_engine_completes_lock PASSED        [ 62%]
+tests/test_models.py::test_zaman_bilgisi PASSED                          [ 63%]
+tests/test_models.py::test_hedef_kutusu_geometri PASSED                  [ 65%]
+tests/test_models.py::test_telemetri_paketi_serialization PASSED         [ 67%]
+tests/test_models.py::test_sunucu_yaniti_parsing PASSED                  [ 68%]
+tests/test_optical_ranging.py::test_optical_ranging_centered_target PASSED [ 70%]
+tests/test_optical_ranging.py::test_optical_ranging_off_center_angles PASSED [ 72%]
+tests/test_optical_ranging.py::test_optical_ranging_camera_to_ned PASSED [ 73%]
+tests/test_packet_buffer.py::test_packet_buffer_enqueue_and_crc PASSED   [ 75%]
+tests/test_packet_buffer.py::test_packet_buffer_fifo_order_and_mark_sent PASSED [ 77%]
+tests/test_packet_buffer.py::test_packet_buffer_retry_and_drop PASSED    [ 78%]
+tests/test_swarm_tactics.py::test_swarm_wingman_offset_position PASSED   [ 80%]
+tests/test_swarm_tactics.py::test_swarm_pincer_attack_vectors PASSED     [ 81%]
+tests/test_swarm_tactics.py::test_swarm_bait_and_ambush_evaluation PASSED [ 83%]
+tests/test_tactical_agent.py::test_tactical_decision_agent_patrol PASSED [ 85%]
+tests/test_tactical_agent.py::test_tactical_decision_agent_offensive_wez PASSED [ 86%]
+tests/test_tactical_agent.py::test_tactical_decision_agent_defensive PASSED [ 88%]
+tests/test_tactical_radar.py::test_tactical_radar_rendering PASSED       [ 90%]
+tests/test_tactical_radar.py::test_tactical_radar_hud_overlay PASSED     [ 91%]
+tests/test_target_evaluator.py::test_target_evaluator_prioritizes_center_and_size PASSED [ 93%]
+tests/test_target_evaluator.py::test_target_evaluator_select_best PASSED [ 95%]
+tests/test_wind_estimator.py::test_wind_estimator_no_wind PASSED         [ 96%]
+tests/test_wind_estimator.py::test_wind_estimator_crosswind PASSED       [ 98%]
+tests/test_wind_estimator.py::test_wind_crab_compensation PASSED         [100%]
+============================== 61 passed in 1.96s ==============================
 ```
 
 ---
@@ -627,7 +701,7 @@ docker-compose logs -f
 
 ### GitHub Actions CI/CD:
 Her `git push` veya `pull request` yapıldığında [`.github/workflows/ci.yml`](.github/workflows/ci.yml) iş akışı otomatik olarak tetiklenerek:
-* Python 3.10, 3.11 ve 3.12 üzerinde 48 adet birim testini,
+* Python 3.10, 3.11 ve 3.12 üzerinde 61 adet birim testini,
 * `preflight_check.py` sistem doğrulamasını,
 * Sentetik veri seti üretim boru hattını çalıştırır ve kod bütünlüğünü garanti eder.
 

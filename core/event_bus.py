@@ -41,6 +41,7 @@ class EventBus:
 
 # Global tekil olay yolu (Singleton)
 bus = EventBus()
+event_bus = bus
 
 # Olay İsim Sabitleri
 EVENT_FRAME_PROCESSED = "frame_processed"

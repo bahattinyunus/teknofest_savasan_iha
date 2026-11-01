@@ -14,6 +14,13 @@ from .bfm_maneuvers import BFMEvasiveTactics, ManevraTipi
 from .wind_estimator import WindEstimator
 from .tactical_decision_agent import TacticalDecisionAgent, TacticalState
 from .swarm_tactics import SwarmTacticsController, SwarmFormation, SwarmRole
+from .collision_avoidance import (
+    CollisionAvoidanceSystem,
+    ACASAlertLevel,
+    AvoidanceManeuver,
+    AvoidanceAdvisory,
+    ThreatAssessment
+)
 
 __all__ = [
     "MavlinkBridge",
@@ -31,5 +38,10 @@ __all__ = [
     "TacticalState",
     "SwarmTacticsController",
     "SwarmFormation",
-    "SwarmRole"
+    "SwarmRole",
+    "CollisionAvoidanceSystem",
+    "ACASAlertLevel",
+    "AvoidanceManeuver",
+    "AvoidanceAdvisory",
+    "ThreatAssessment"
 ]

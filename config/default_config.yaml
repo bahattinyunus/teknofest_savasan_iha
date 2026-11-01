@@ -109,3 +109,37 @@ suru_taktikleri:
 paket_tamponu:
   maks_tampon_boyutu: 500       # Ag kopmasinda hafizada tutulacak azami paket sayisi
   maks_tekrar_deneme: 3         # Paketin tekrar sunucuya iletilme deneme limiti
+
+saglik_izleme:
+  aktif: true
+  batarya_uyari_yuzdesi: 25.0
+  batarya_kritik_yuzdesi: 15.0
+  batarya_acil_yuzdesi: 10.0
+  baglanti_kopma_uyari_sn: 5.0
+  baglanti_kopma_kritik_sn: 15.0
+  baglanti_kopma_acil_sn: 30.0
+  max_cpu_sicaklik_c: 80.0
+  max_gps_hdop: 2.2
+  min_kamera_fps: 15.0
+
+optik_menzil:
+  aktif: true
+  varsayilan_kanat_acikligi_m: 1.20   # Hedef IHA kanat acikligi varsayimi (metre)
+  min_angajman_menzili_m: 15.0        # WEZ (Weapon Engagement Zone) asgari mesafe
+  maks_angajman_menzili_m: 120.0      # WEZ azami etkili kilitlenme mesafesi
+  maks_boresight_acisi_deg: 25.0
+
+carpismadan_kacinma:
+  aktif: true                         # ACAS / TCAS Havada Carpisma Onleme Sistemi
+  ta_mesafe_m: 75.0                   # Traffic Advisory (TA) uyari mesafesi
+  ta_sure_sn: 8.0                     # Time-to-CPA (tau) TA esigi
+  ra_mesafe_m: 25.0                   # Resolution Advisory (RA) acil kacinma mesafesi
+  ra_sure_sn: 4.5                     # Time-to-CPA (tau) RA esigi
+  dikey_ayrilma_m: 15.0               # Guvenli irtifa farki tamponu
+  yatay_kacinma_acisi_deg: 35.0
+
+dogfight_similasyon:
+  dt_sn: 0.05                         # 20 Hz simülasyon zaman adimi
+  kirmizi_davranis: "WEAVE"           # ORBIT, WEAVE, AGGRESSIVE_BFM, HEAD_ON
+  mavi_hiz_mps: 22.0
+  kirmizi_hiz_mps: 19.0

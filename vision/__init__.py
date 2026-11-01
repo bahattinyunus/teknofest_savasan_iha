@@ -10,6 +10,7 @@ from .kamikaze_engine import KamikazeEngine
 from .target_evaluator import TacticalTargetEvaluator
 from .tactical_radar import TacticalRadarMinimap
 from .gimbal_controller import GimbalController
+from .optical_ranging import OpticalRanger, OpticalRangingResult
 
 __all__ = [
     "YoloDetector",
@@ -21,5 +22,7 @@ __all__ = [
     "KamikazeEngine",
     "TacticalTargetEvaluator",
     "TacticalRadarMinimap",
-    "GimbalController"
+    "GimbalController",
+    "OpticalRanger",
+    "OpticalRangingResult"
 ]
