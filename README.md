@@ -15,6 +15,10 @@
 
 **TEKNOFEST Savaşan İHA (Fighter UAV) Yarışması İçin Geliştirilmiş Uçtan Uca Otonom Hava Muharebesi, Görüntü İşleme, Hedef Kilitlenme, Güdüm ve Yer Kontrol İstasyonu Çerçevesi**
 
+<br>
+
+<img src="docs/assets/hero_banner.jpg" alt="AeroCombat Autonomous Fighter UAV Dogfight System" width="100%" style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+
 </div>
 
 ---
@@ -200,6 +204,10 @@ Bu sayede yüksek hızlı dönüşlerde dahi nişangah hedefin merkezinden asla 
 * HSS (Hava Savunma Sistemi) tehlike daireleri.
 * Canlı kamera görüntüsü üzerine yarı saydam minimap olarak bindirilebilir.
 
+<p align="center">
+  <img src="docs/assets/radar_minimap_sample.png" alt="2D Askeri Taktik Radar Göstergesi" width="380px" style="border-radius: 6px;">
+</p>
+
 ---
 
 ## 📼 Uçuş Kara Kutusu (Black Box Flight Recorder)
@@ -258,6 +266,10 @@ Resmi yarışma sunucusu yalnızca yarışma günü açıldığı için, bu repo
 * **Dinamik Kilitlenme Halkası:** Hedef arama modunda Cyan, kriterler sağlandığında Sarı, 4.0 saniye dolup kilitlendiğinde Yeşil.
 * **Geri Sayım İlerleme Çubuğu:** `LOCKING: 2.45s / 4.0s` canlı zamanlayıcı.
 * **Hedef Bilgi Etiketi:** `ID:1 0.94 | 6.2% [OK]` (Track ID, Güven Skoru, Ekran Alanı Yüzdesi).
+
+<p align="center">
+  <img src="docs/assets/hud_lockon_sample.png" alt="Askeri Standartta Canlı Kilitlenme HUD Ekranı" width="100%" style="border-radius: 8px;">
+</p>
 
 ### PyQt6 Yer Kontrol İstasyonu (`gcs/app.py`):
 * Sol panelde canlı kamera akışı ve HUD bindirmeleri.
@@ -417,6 +429,10 @@ python tools/synthetic_dataset_generator.py --count 500 --output dataset/synthet
 * **Figure-8 (Sekiz Deseni Devriyesi):** Sabit kanatlı İHA'nın sürekli dönüş yaparak burnundaki radar/kamera konisini $360^\circ$ gezdirmesini sağlar; enerji ve irtifa kaybını minimize eder.
 * **Dinamik Önleme (Intercept Insertion):** Hakem sunucusundan veya radardan rakip İHA telemetrisi alındığı an mevcut devriye askıya alınır, hedefin önüne önleme noktası eklenir; hedef kaybedilirse devriyeye kaldığı yerden dönülür.
 
+<p align="center">
+  <img src="docs/assets/mission_patterns.png" alt="Taktiksel Arama Desenleri (Zikzak, Sekiz, Orbit)" width="100%" style="border-radius: 8px;">
+</p>
+
 ---
 
 ## 👁️ Çift Kameralı Geniş-Dar Açı Optik Sensör Füzyonu
@@ -425,6 +441,10 @@ python tools/synthetic_dataset_generator.py --count 500 --output dataset/synthet
 
 * **Erken %5 Kilitlenme Avantajı:** Dar açılı kamera yaklaşık $2.6\times$ optik büyütme sağlar. Bu sayede $80\text{ metre}$ mesafede geniş kamerada ekranın sadece $\%1.8$'ini kaplayan hedef, Zoom kamerasında $\%12$'ye ulaşarak kural gereği gereken $\%5$ alan şartını onlarca metre önceden sağlar!
 * **Uzaysal Dönüşüm ve IoU Eşleştirme:** İki kameranın görüş açı oranlarına ($s = \frac{\tan(\text{HFOV}_{\text{wide}}/2)}{\tan(\text{HFOV}_{\text{zoom}}/2)}$) göre piksel koordinatlarını haritalar ve hedefleri ortak track ID altında birleştirir.
+
+<p align="center">
+  <img src="docs/assets/dual_camera_fov_comparison.png" alt="Geniş Açı ve Zoom Kamera Karşılaştırması" width="100%" style="border-radius: 8px;">
+</p>
 
 ---
 

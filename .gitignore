@@ -44,6 +44,9 @@ recordings/
 *.mkv
 *.jpg
 *.png
+!docs/assets/*.png
+!docs/assets/*.jpg
+!docs/assets/*.jpeg
 *.csv
 
 # SITL / ArduPilot / Gazebo
