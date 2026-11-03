@@ -143,3 +143,23 @@ dogfight_similasyon:
   kirmizi_davranis: "WEAVE"           # ORBIT, WEAVE, AGGRESSIVE_BFM, HEAD_ON
   mavi_hiz_mps: 22.0
   kirmizi_hiz_mps: 19.0
+
+gnss_guvenlik:
+  aktif: true                         # Anti-Jamming & Anti-Spoofing Dead Reckoning
+  maks_konum_sicramasi_m: 40.0        # Spoofing algilama ani konum degisimi (m)
+  maks_hiz_farki_mps: 15.0            # GPS yer hizi ile pitot hava surati azami fark
+  maks_hdop: 3.5                      # Jamming sinyal bozulma esigi
+  min_uydu_sayisi: 5
+
+gorev_planlayici:
+  varsayilan_irtifa_m: 80.0
+  varsayilan_hiz_mps: 20.0
+  arama_deseni: "CREEPING_LINE"       # CREEPING_LINE, FIGURE_8, ORBIT_LOITER
+  tarama_araligi_m: 80.0              # Zikzak bacaklari arasi mesafe
+  kabul_yaricapi_m: 25.0              # Waypoint ulasilma toleransi
+
+cift_kamera_fuzyonu:
+  aktif: false                        # Cift kamera optik fuzyonu
+  genis_hfov_deg: 90.0                # Genis aci kamera (durumsal farkindalik)
+  zoom_hfov_deg: 35.0                 # Dar aci / telefoto kamera (uzak menzil %5 kilit)
+  iou_esigi: 0.25

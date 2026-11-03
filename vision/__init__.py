@@ -11,6 +11,7 @@ from .target_evaluator import TacticalTargetEvaluator
 from .tactical_radar import TacticalRadarMinimap
 from .gimbal_controller import GimbalController
 from .optical_ranging import OpticalRanger, OpticalRangingResult
+from .multi_camera_fusion import MultiCameraFusion, CameraRole, FusedTarget
 
 __all__ = [
     "YoloDetector",
@@ -24,5 +25,8 @@ __all__ = [
     "TacticalRadarMinimap",
     "GimbalController",
     "OpticalRanger",
-    "OpticalRangingResult"
+    "OpticalRangingResult",
+    "MultiCameraFusion",
+    "CameraRole",
+    "FusedTarget"
 ]

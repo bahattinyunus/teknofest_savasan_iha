@@ -124,6 +124,17 @@ def run_preflight_check():
     acas_ok = (CollisionAvoidanceSystem() is not None) and (OpticalRanger() is not None)
     results.append(("ACAS Carpisma Onleme & Optik Menzil", "3D CPA & WEZ Dogrulandi", acas_ok))
 
+    # 15. GNSS-Denied Anti-Jamming & Dead Reckoning
+    from autopilot.gnss_denied_nav import GNSSDeniedNavigator
+    gnss_ok = GNSSDeniedNavigator() is not None
+    results.append(("GNSS Anti-Jamming & Dead Reckoning", "Ataletsel Parakete Hazir", gnss_ok))
+
+    # 16. Taktiksel Gorev Planlayici & Cift Kamera Fuzyonu
+    from autopilot.mission_planner import TacticalMissionPlanner
+    from vision.multi_camera_fusion import MultiCameraFusion
+    planner_ok = (TacticalMissionPlanner() is not None) and (MultiCameraFusion() is not None)
+    results.append(("Gorev Planlayici & Cift Kamera", "Zikzak/Fig8 & Optik Fuzyon", planner_ok))
+
     # Tablo Yazdırma
     all_passed = True
     for name, detail, status in results:

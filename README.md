@@ -8,7 +8,7 @@
 [![Autopilot](https://img.shields.io/badge/Autopilot-ArduPilot%20%2F%20PX4%20(MAVLink)-1E88E5)](https://ardupilot.org/)
 [![FastAPI](https://img.shields.io/badge/Mock%20Server-FastAPI%20%2F%20Uvicorn-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![GUI](https://img.shields.io/badge/GCS%20GUI-PyQt6-41CD52?logo=qt&logoColor=white)](https://riverbankcomputing.com/software/pyqt/)
-[![Tests](https://img.shields.io/badge/Tests-61%20Passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-72%20Passed-brightgreen)](tests/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](Dockerfile)
 [![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
@@ -398,6 +398,36 @@ python tools/synthetic_dataset_generator.py --count 500 --output dataset/synthet
 
 ---
 
+## 🛡 Elektronik Harp ve GNSS-Denied Parakete Seyrüseferi
+
+`autopilot/gnss_denied_nav.py`, yarışma alanında RF karıştırıcı (jammer), GPS spoofing (sahte konum yayını) veya sinyal kopması durumunda uçağın rotadan sapmasını ve Geofence dışına çıkarak elenmesini önler:
+
+* **Spoofing & Jamming Tespiti:** GPS hız vektörü ile pitot tüpü hava sürati ($V_{\text{air}}$) arasındaki tutarsızlıkları, ani koordinat sıçramalarını ($> 40\text{ m}$) ve HDOP anomalilerini ($> 3.5$) milisaniyelik filtrelerle denetler.
+* **Ataletsel Parakete (Dead Reckoning):** GPS sinyali kesildiği anda pusula açısı ($\psi$), hava sürati ($V_a$), hücum/dikilme açısı ($\theta$) ve rüzgar kestirimi ($\vec{W}$) ile $O(1)$ karmaşıklığında güvenli konum ilerletmesi yapar:
+  $$\vec{V}_{\text{yer}} = \vec{V}_{\text{hava}} + \vec{W}, \quad P_t = P_{t-1} + \vec{V}_{\text{yer}} \cdot \Delta t$$
+* **Pürüzsüz İyileşme (Smooth Blending):** GPS sinyali geri geldiğinde anlık sarsıntı yapmadan 5 ardışık güvenilir örnekle nominal seyrüsefere yumuşak geçiş sağlar.
+
+---
+
+## 🗺 Taktiksel Uçuş Görev Planlayıcısı ve Arama Desenleri
+
+`autopilot/mission_planner.py`, yarışma sahası poligonunda radar ve optik arama verimini maksimize eden taktiksel seyrüsefer yolları üretir:
+
+* **Creeping Line (Zikzak Arama):** Poligon alanını eşit aralıklı paralel hatlarla tarayarak tüm hava koridorunu en kısa sürede tarar.
+* **Figure-8 (Sekiz Deseni Devriyesi):** Sabit kanatlı İHA'nın sürekli dönüş yaparak burnundaki radar/kamera konisini $360^\circ$ gezdirmesini sağlar; enerji ve irtifa kaybını minimize eder.
+* **Dinamik Önleme (Intercept Insertion):** Hakem sunucusundan veya radardan rakip İHA telemetrisi alındığı an mevcut devriye askıya alınır, hedefin önüne önleme noktası eklenir; hedef kaybedilirse devriyeye kaldığı yerden dönülür.
+
+---
+
+## 👁️ Çift Kameralı Geniş-Dar Açı Optik Sensör Füzyonu
+
+`vision/multi_camera_fusion.py`, hem geniş açılı durumsal farkındalık kamerasını (Wide FOV $\sim 90^\circ$) hem de dar açılı telefoto/zoom kamerasını (Zoom FOV $\sim 35^\circ$) eşzamanlı birleştirir:
+
+* **Erken %5 Kilitlenme Avantajı:** Dar açılı kamera yaklaşık $2.6\times$ optik büyütme sağlar. Bu sayede $80\text{ metre}$ mesafede geniş kamerada ekranın sadece $\%1.8$'ini kaplayan hedef, Zoom kamerasında $\%12$'ye ulaşarak kural gereği gereken $\%5$ alan şartını onlarca metre önceden sağlar!
+* **Uzaysal Dönüşüm ve IoU Eşleştirme:** İki kameranın görüş açı oranlarına ($s = \frac{\tan(\text{HFOV}_{\text{wide}}/2)}{\tan(\text{HFOV}_{\text{zoom}}/2)}$) göre piksel koordinatlarını haritalar ve hedefleri ortak track ID altında birleştirir.
+
+---
+
 ## 🛠 Donanım Mimarisi ve Kablolama
 
 | Bileşen | Önerilen Model | Bağlantı Arayüzü | Görevi |
@@ -435,6 +465,7 @@ teknofest_savasan_iha/
 │   ├── lock_engine.py              # 4.0 sn kesintisiz sayaç, %5 kuralı ve MP4 kanıt üreticisi
 │   ├── latency_compensator.py      # Gecikme telafisi için Delayed Kalman Filter (DKF)
 │   ├── optical_ranging.py          # Pinhole optik modeli ile 3D menzil ve NED konum kestirimi
+│   ├── multi_camera_fusion.py      # Çift kamera geniş/dar açı uzaysal optik sensör füzyonu
 │   ├── gimbal_controller.py        # 2-Eksen Pan/Tilt fırçasız gimbal hedef takip kontrolcüsü
 │   ├── kamikaze_engine.py          # Kamikaze yer hedefi dalış ve QR kod okuyucu
 │   ├── tactical_radar.py           # 2D Askeri minimap ve HUD radar göstergesi
@@ -455,6 +486,8 @@ teknofest_savasan_iha/
 │   ├── guidance.py                 # PN, Pure Pursuit ve Coordinated Turn uçuş zarfı güdümü
 │   ├── bfm_maneuvers.py            # Break Turn, Scissors, High Yo-Yo it dalaşı manevraları
 │   ├── collision_avoidance.py      # ACAS / TCAS CPA ve hız engeli (VO) çarpışma önleyici
+│   ├── gnss_denied_nav.py          # GNSS karıştırma/aldatma (Anti-Jamming/Spoofing) parakete seyrüseferi
+│   ├── mission_planner.py          # Zikzak (Creeping Line) & Sekiz (Fig8) devriye görev planlayıcısı
 │   ├── swarm_tactics.py            # Fighting Wing, Pincer, Bait & Ambush çoklu İHA taktikleri
 │   ├── tactical_decision_agent.py  # DARPA BFM tabanlı hava muharebesi durum makinesi
 │   ├── wind_estimator.py           # Rüzgar vektörü tahmini ve Crab açısı düzeltmesi
@@ -469,7 +502,7 @@ teknofest_savasan_iha/
 │   └── dogfight_simulator.py       # 3D 1v1 Mavi/Kırmızı İHA it dalaşı simülatörü
 ├── tools/
 │   ├── __init__.py
-│   ├── preflight_check.py          # Uçuş öncesi 14 kritik bileşenin otomatik kontrolü
+│   ├── preflight_check.py          # Uçuş öncesi 16 kritik bileşenin otomatik kontrolü
 │   ├── flight_player.py            # Uçuş telemetri loglarını offline oynatıcı
 │   ├── antenna_tracker.py          # Yer istasyonu yönlü otomatik anten takipçisi (AAT)
 │   ├── benchmark_inference.py      # Model çıkarım hızı, FPS ve gecikme persentil analiz aracı
@@ -555,7 +588,9 @@ Bu araç sırasıyla:
 11. 2-Eksen Gimbal ve Otomatik Anten Takip (AAT) modüllerini,
 12. CRC32 Paket Kaybı Önleyici Telemetri Tamponunu,
 13. Akıllı Sistem Sağlığı ve Kademeli Failsafe Durum Makinesini,
-14. ACAS Çarpışma Önleme ve Optik Menzil Kestirimi algoritmalarını
+14. ACAS Çarpışma Önleme ve Optik Menzil Kestirimi algoritmalarını,
+15. GNSS-Denied Anti-Jamming ve Ataletsel Parakete (DR) Navigasyonunu,
+16. Taktiksel Görev Planlayıcı (Zikzak/Fig8) ve Çift Kamera Füzyonunu
 denetler ve renkli bir kontrol tablosu basar.
 
 ---
@@ -657,33 +692,41 @@ tests/test_kamikaze.py::test_kamikaze_paketi_serialization PASSED        [ 52%]
 tests/test_latency_compensator.py::test_delayed_kalman_filter_initialization PASSED [ 54%]
 tests/test_latency_compensator.py::test_delayed_kalman_filter_velocity_prediction PASSED [ 55%]
 tests/test_latency_compensator.py::test_box_latency_compensation PASSED  [ 57%]
-tests/test_lock_engine.py::test_lock_engine_requires_5_percent_area PASSED [ 59%]
-tests/test_lock_engine.py::test_lock_engine_starts_on_valid_target PASSED [ 60%]
-tests/test_lock_engine.py::test_lock_engine_completes_lock PASSED        [ 62%]
-tests/test_models.py::test_zaman_bilgisi PASSED                          [ 63%]
-tests/test_models.py::test_hedef_kutusu_geometri PASSED                  [ 65%]
-tests/test_models.py::test_telemetri_paketi_serialization PASSED         [ 67%]
-tests/test_models.py::test_sunucu_yaniti_parsing PASSED                  [ 68%]
-tests/test_optical_ranging.py::test_optical_ranging_centered_target PASSED [ 70%]
-tests/test_optical_ranging.py::test_optical_ranging_off_center_angles PASSED [ 72%]
-tests/test_optical_ranging.py::test_optical_ranging_camera_to_ned PASSED [ 73%]
-tests/test_packet_buffer.py::test_packet_buffer_enqueue_and_crc PASSED   [ 75%]
-tests/test_packet_buffer.py::test_packet_buffer_fifo_order_and_mark_sent PASSED [ 77%]
-tests/test_packet_buffer.py::test_packet_buffer_retry_and_drop PASSED    [ 78%]
-tests/test_swarm_tactics.py::test_swarm_wingman_offset_position PASSED   [ 80%]
-tests/test_swarm_tactics.py::test_swarm_pincer_attack_vectors PASSED     [ 81%]
-tests/test_swarm_tactics.py::test_swarm_bait_and_ambush_evaluation PASSED [ 83%]
-tests/test_tactical_agent.py::test_tactical_decision_agent_patrol PASSED [ 85%]
-tests/test_tactical_agent.py::test_tactical_decision_agent_offensive_wez PASSED [ 86%]
-tests/test_tactical_agent.py::test_tactical_decision_agent_defensive PASSED [ 88%]
-tests/test_tactical_radar.py::test_tactical_radar_rendering PASSED       [ 90%]
-tests/test_tactical_radar.py::test_tactical_radar_hud_overlay PASSED     [ 91%]
-tests/test_target_evaluator.py::test_target_evaluator_prioritizes_center_and_size PASSED [ 93%]
+tests/test_lock_engine.py::test_lock_engine_requires_5_percent_area PASSED [ 54%]
+tests/test_lock_engine.py::test_lock_engine_starts_on_valid_target PASSED [ 55%]
+tests/test_lock_engine.py::test_lock_engine_completes_lock PASSED        [ 56%]
+tests/test_mission_planner.py::test_mission_planner_creeping_line PASSED [ 58%]
+tests/test_mission_planner.py::test_mission_planner_figure_8 PASSED      [ 59%]
+tests/test_mission_planner.py::test_mission_planner_orbit PASSED         [ 61%]
+tests/test_mission_planner.py::test_mission_planner_intercept_and_resume PASSED [ 62%]
+tests/test_mission_planner.py::test_mission_planner_waypoint_advance PASSED [ 63%]
+tests/test_models.py::test_zaman_bilgisi PASSED                          [ 65%]
+tests/test_models.py::test_hedef_kutusu_geometri PASSED                  [ 66%]
+tests/test_models.py::test_telemetri_paketi_serialization PASSED         [ 68%]
+tests/test_models.py::test_sunucu_yaniti_parsing PASSED                  [ 69%]
+tests/test_multi_camera_fusion.py::test_multi_camera_fusion_coordinate_transforms PASSED [ 70%]
+tests/test_multi_camera_fusion.py::test_multi_camera_fusion_matched_target PASSED [ 72%]
+tests/test_multi_camera_fusion.py::test_multi_camera_fusion_wide_only PASSED [ 73%]
+tests/test_optical_ranging.py::test_optical_ranging_centered_target PASSED [ 75%]
+tests/test_optical_ranging.py::test_optical_ranging_off_center_angles PASSED [ 76%]
+tests/test_optical_ranging.py::test_optical_ranging_camera_to_ned PASSED [ 77%]
+tests/test_packet_buffer.py::test_packet_buffer_enqueue_and_crc PASSED   [ 79%]
+tests/test_packet_buffer.py::test_packet_buffer_fifo_order_and_mark_sent PASSED [ 80%]
+tests/test_packet_buffer.py::test_packet_buffer_retry_and_drop PASSED    [ 81%]
+tests/test_swarm_tactics.py::test_swarm_wingman_offset_position PASSED   [ 83%]
+tests/test_swarm_tactics.py::test_swarm_pincer_attack_vectors PASSED     [ 84%]
+tests/test_swarm_tactics.py::test_swarm_bait_and_ambush_evaluation PASSED [ 86%]
+tests/test_tactical_agent.py::test_tactical_decision_agent_patrol PASSED [ 87%]
+tests/test_tactical_agent.py::test_tactical_decision_agent_offensive_wez PASSED [ 88%]
+tests/test_tactical_agent.py::test_tactical_decision_agent_defensive PASSED [ 90%]
+tests/test_tactical_radar.py::test_tactical_radar_rendering PASSED       [ 91%]
+tests/test_tactical_radar.py::test_tactical_radar_hud_overlay PASSED     [ 93%]
+tests/test_target_evaluator.py::test_target_evaluator_prioritizes_center_and_size PASSED [ 94%]
 tests/test_target_evaluator.py::test_target_evaluator_select_best PASSED [ 95%]
-tests/test_wind_estimator.py::test_wind_estimator_no_wind PASSED         [ 96%]
+tests/test_wind_estimator.py::test_wind_estimator_no_wind PASSED         [ 97%]
 tests/test_wind_estimator.py::test_wind_estimator_crosswind PASSED       [ 98%]
 tests/test_wind_estimator.py::test_wind_crab_compensation PASSED         [100%]
-============================== 61 passed in 1.96s ==============================
+============================== 72 passed in 2.08s ==============================
 ```
 
 ---
@@ -702,7 +745,7 @@ docker-compose logs -f
 
 ### GitHub Actions CI/CD:
 Her `git push` veya `pull request` yapıldığında [`.github/workflows/ci.yml`](.github/workflows/ci.yml) iş akışı otomatik olarak tetiklenerek:
-* Python 3.10, 3.11 ve 3.12 üzerinde 61 adet birim testini,
+* Python 3.10, 3.11 ve 3.12 üzerinde 72 adet birim testini,
 * `preflight_check.py` sistem doğrulamasını,
 * Sentetik veri seti üretim boru hattını çalıştırır ve kod bütünlüğünü garanti eder.
 

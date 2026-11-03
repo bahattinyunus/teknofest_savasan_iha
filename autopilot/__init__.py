@@ -21,6 +21,8 @@ from .collision_avoidance import (
     AvoidanceAdvisory,
     ThreatAssessment
 )
+from .gnss_denied_nav import GNSSDeniedNavigator, GNSSStatus, GNSSSample
+from .mission_planner import TacticalMissionPlanner, SearchPattern, Waypoint
 
 __all__ = [
     "MavlinkBridge",
@@ -43,5 +45,11 @@ __all__ = [
     "ACASAlertLevel",
     "AvoidanceManeuver",
     "AvoidanceAdvisory",
-    "ThreatAssessment"
+    "ThreatAssessment",
+    "GNSSDeniedNavigator",
+    "GNSSStatus",
+    "GNSSSample",
+    "TacticalMissionPlanner",
+    "SearchPattern",
+    "Waypoint"
 ]
