@@ -221,3 +221,81 @@ class KamikazePaketi:
             "qrMetni": self.qrMetni,
             "otonom": self.otonom
         }
+
+
+class EWAlertLevel(Enum):
+    """Elektronik Harp ve Karıştırma Tehdit Düzeyi."""
+    NORMAL = "NORMAL"                 # Herhangi bir tehdit veya karıştırma yok
+    CAUTION = "CAUTION"               # Hafif sinyal bozulması veya paket kaybı
+    THREAT = "THREAT"                 # Ciddi RF karıştırma veya GPS aldatması şüphesi
+    CRITICAL_JAMMING = "CRITICAL_JAMMING" # Tam GNSS kaybı ve yoğun karıştırma
+    EMCON = "EMCON"                   # Emisyon Kontrolü (Sessiz Çalışma / RF Susturma)
+
+
+@dataclass
+class EWStatus:
+    """Elektronik harp ve karşı tedbir durum özeti."""
+    tehdit_seviyesi: EWAlertLevel = EWAlertLevel.NORMAL
+    gnss_aldatma_tespiti: bool = False
+    rf_karistirma_tespiti: bool = False
+    optik_sahte_hedef_tespiti: bool = False
+    emcon_aktif: bool = False
+    sinyal_kalite_skoru: float = 1.0     # 0.0 (tam kör) - 1.0 (mükemmel)
+    onerilen_eylem: str = "STANDART_SEYRUSEFER"
+
+
+@dataclass
+class EnergyState:
+    """John Boyd Enerji-Manevra (E-M) teorisi uçuş zarfı ve enerji durumu."""
+    ozgurluk_enerjisi_He_m: float = 0.0          # Özgül Enerji Yüksekliği H_e = h + V^2 / (2g) [metre]
+    ozgurluk_fazla_gucu_Ps_mps: float = 0.0      # P_s = (T - D)/W * V [m/s]
+    manevra_kose_hizi_Vc_mps: float = 24.0       # Köşe hızı V_c [m/s] (maksimum anlık dönüş açısı)
+    anlik_donus_hizi_dps: float = 0.0            # Maksimum anlık dönüş hızı [deg/s]
+    surdurulebilir_donus_hizi_dps: float = 0.0    # Sürdürülebilir dönüş hızı (Ps = 0) [deg/s]
+    asgari_donus_yaricapi_m: float = 20.0        # En küçük dönüş yarıçapı R_min [metre]
+    enerji_avantaji_m: float = 0.0               # Hedefe kıyasla enerji farkı: He_own - He_target [m]
+    onerilen_taktik: str = "RATE_FIGHT_2_CIRCLE" # "RATE_FIGHT_2_CIRCLE" veya "RADIUS_FIGHT_1_CIRCLE"
+    perdovites_koruma_aktif: bool = False
+
+
+@dataclass
+class EKFState6DOF:
+    """15-Durumlu Havacılık Genişletilmiş Kalman Filtresi Durum Vektörü."""
+    pos_ned_m: List[float] = field(default_factory=lambda: [0.0, 0.0, 0.0])       # Kuzey, Doğu, Aşağı (m)
+    vel_ned_mps: List[float] = field(default_factory=lambda: [0.0, 0.0, 0.0])     # V_N, V_E, V_D (m/s)
+    quat: List[float] = field(default_factory=lambda: [1.0, 0.0, 0.0, 0.0])       # [q0, q1, q2, q3]
+    euler_deg: List[float] = field(default_factory=lambda: [0.0, 0.0, 0.0])       # [Roll, Pitch, Yaw]
+    accel_bias: List[float] = field(default_factory=lambda: [0.0, 0.0, 0.0])      # [b_ax, b_ay, b_az] (m/s^2)
+    gyro_bias: List[float] = field(default_factory=lambda: [0.0, 0.0, 0.0])       # [b_gx, b_gy, b_gz] (rad/s)
+    covariance_diag: List[float] = field(default_factory=list)                    # Kovaryans matrisi köşegeni
+    timestamp_s: float = 0.0
+
+
+@dataclass
+class ProofRecord:
+    """Kriptografik kilitlenme zincirindeki tekil kare kaydı."""
+    frame_index: int
+    timestamp_s: float
+    frame_hash_sha256: str
+    target_box: Dict[str, Any]
+    telemetry_summary: Dict[str, Any]
+    previous_hash: str
+    record_hash: str
+
+
+@dataclass
+class ProofChainManifest:
+    """Bir kilitlenme sürecinin kriptografik mühür ve doğrulama sertifikası."""
+    lock_id: str
+    team_id: int
+    start_time_iso: str
+    end_time_iso: str
+    total_frames: int
+    duration_s: float
+    merkle_root: str
+    final_chain_hash: str
+    digital_signature: str
+    is_valid_rule_lock: bool
+    score_earned: float
+    records: List[ProofRecord] = field(default_factory=list)
+

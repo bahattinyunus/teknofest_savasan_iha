@@ -53,3 +53,6 @@ EVENT_TELEMETRY_UPDATED = "telemetry_updated"
 EVENT_RIVALS_UPDATED = "rivals_updated"
 EVENT_GEOFENCE_ALERT = "geofence_alert"
 EVENT_SERVER_STATUS = "server_status"
+EVENT_EW_ALERT = "ew_alert"
+EVENT_ENERGY_STATE_UPDATED = "energy_state_updated"
+

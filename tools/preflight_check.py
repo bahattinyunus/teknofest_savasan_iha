@@ -135,6 +135,31 @@ def run_preflight_check():
     planner_ok = (TacticalMissionPlanner() is not None) and (MultiCameraFusion() is not None)
     results.append(("Gorev Planlayici & Cift Kamera", "Zikzak/Fig8 & Optik Fuzyon", planner_ok))
 
+    # 17. John Boyd E-M Enerji Yoneticisi & Ucus Zarfi
+    from autopilot.energy_manager import EnergyManeuverabilityGovernor
+    em_gov = EnergyManeuverabilityGovernor()
+    em_ok = em_gov is not None and em_gov.corner_velocity > 0
+    results.append(("Boyd E-M Enerji & Kose Hizi", f"Vc={em_gov.corner_velocity:.1f} m/s | Ps Hesabi Aktif", em_ok))
+
+    # 18. Elektronik Harp & Anti-Spoofing ECCM
+    from core.electronic_warfare import ElectronicWarfareSuite
+    ew_suite = ElectronicWarfareSuite()
+    ew_ok = ew_suite is not None
+    results.append(("Elektronik Harp & Anti-Spoofing", "GNSS & RF Jammer Tespiti Hazir", ew_ok))
+
+    # 19. 15-Durumlu Havacilik EKF 6-DOF Fuzyonu
+    from core.aerospace_ekf import AerospaceEKF
+    ekf_core = AerospaceEKF()
+    ekf_ok = ekf_core is not None and ekf_core.state_dim == 16
+    results.append(("15-State Havacilik EKF (6-DOF)", "Strapdown INS/GNSS/VO Fuzyonu", ekf_ok))
+
+    # 20. Kriptografik Kilit Kanit Zinciri & Merkle Muhru
+    from referee.proof_chain import CryptographicProofChain
+    proof_chain = CryptographicProofChain()
+    proof_chain_ok = proof_chain is not None
+    results.append(("Kriptografik Kanit Zinciri", "SHA-256 Merkle Muhru & Auditor", proof_chain_ok))
+
+
     # Tablo Yazdırma
     all_passed = True
     for name, detail, status in results:

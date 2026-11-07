@@ -23,6 +23,7 @@ from .collision_avoidance import (
 )
 from .gnss_denied_nav import GNSSDeniedNavigator, GNSSStatus, GNSSSample
 from .mission_planner import TacticalMissionPlanner, SearchPattern, Waypoint
+from .energy_manager import EnergyManeuverabilityGovernor
 
 __all__ = [
     "MavlinkBridge",
@@ -51,5 +52,6 @@ __all__ = [
     "GNSSSample",
     "TacticalMissionPlanner",
     "SearchPattern",
-    "Waypoint"
+    "Waypoint",
+    "EnergyManeuverabilityGovernor"
 ]

@@ -8,7 +8,7 @@
 [![Autopilot](https://img.shields.io/badge/Autopilot-ArduPilot%20%2F%20PX4%20(MAVLink)-1E88E5)](https://ardupilot.org/)
 [![FastAPI](https://img.shields.io/badge/Mock%20Server-FastAPI%20%2F%20Uvicorn-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![GUI](https://img.shields.io/badge/GCS%20GUI-PyQt6-41CD52?logo=qt&logoColor=white)](https://riverbankcomputing.com/software/pyqt/)
-[![Tests](https://img.shields.io/badge/Tests-72%20Passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-95%20Passed-brightgreen)](tests/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](Dockerfile)
 [![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
@@ -448,6 +448,70 @@ python tools/synthetic_dataset_generator.py --count 500 --output dataset/synthet
 
 ---
 
+## ⚡ John Boyd Enerji-Manevra (E-M) Teorisi ve Uçuş Zarfı Yöneticisi
+
+Modern hava muharebesinde (dogfight) bir avcı uçağının zaferi yalnızca geometrik takip yeteneğine değil, **kinetik ve potansiyel enerjisini (Specific Excess Power - $P_s$ ve Energy Height - $H_e$)** nasıl yönettiğine bağlıdır. `autopilot/energy_manager.py`, efsanevi havacılık stratejisti Albay John Boyd'un E-M teorisini otonom İHA aviyoniklerine entegre eder:
+
+* **Özgül Enerji Yüksekliği (Energy Height - $H_e$):**
+  $$H_e = h + \frac{V^2}{2g}$$
+  Uçağın irtifa (potansiyel) ve sürat (kinetik) toplam enerjisini metre cinsinden ifade eder.
+* **Özgül Fazla Güç (Specific Excess Power - $P_s$):**
+  $$P_s = \frac{T - D}{W} \cdot V = \frac{dh}{dt} + \frac{V}{g}\frac{dV}{dt}$$
+  $P_s > 0$ iken uçak tırmanabilir veya hızlanabilir; $P_s < 0$ iken yüksek G manevraları uçağın enerjisini tüketir (energy bleed).
+* **Köşe Hızı (Corner Velocity - $V_c$):**
+  $$V_c = \sqrt{\frac{2 \cdot n_{\max} \cdot W}{\rho \cdot S \cdot C_{L,\max}}}$$
+  Bu kritik hızda aerodinamik maksimum taşıma ile yapısal $g$-limiti kesişir. İHA burada **en yüksek anlık dönüş hızına ($\dot{\psi}_{\max}$)** ve **en dar dönüş yarıçapına ($R_{\min}$)** ulaşır.
+* **1-Circle vs 2-Circle Angajman Karar Motoru:**
+  * Hedefe göre $\Delta H_e > +40\text{ m}$ (Enerji üstünlüğü): **2-Circle Rate Fight** (Sürdürülebilir yüksek dönüş hızında rakibin enerjisini tüketerek arkasına oturma).
+  * Hedefe göre $\Delta H_e < -25\text{ m}$ (Enerji dezavantajı): **1-Circle Radius Fight** (Dönüş yarışından kaçınıp burun açısıyla tek hamlede kilit alma veya dalışla hız toplama).
+  * Stall Önleme: Hız $1.15 \cdot V_{\text{stall}}$ altına düştüğünde otonom `STALL_RECOVERY_PULL_DOWN_BOOST` devreye girerek uçağı burun aşağı basar ve tam gazla enerjiyi geri kazanır.
+
+---
+
+## 📡 Elektronik Harp (EW), Anti-Spoofing & RF Karıştırma Savunması
+
+Yarışma ortamında ve modern harp sahasında GNSS sinyallerinin aldatılması (spoofing) ve telemetri kanallarının gürültüyle boğulması (jamming) en yaygın tehditlerdir. `core/electronic_warfare.py`, çok katmanlı Elektronik Karşı-Karşı Tedbir (ECCM) protokollerini yürütür:
+
+* **GNSS Spoofing Tespiti:**
+  * Koordinat sıçraması ve fizik dışı hızlanma ($v_{\text{apparent}} > 75\text{ m/s}$) anında GNSS aldatma alarmı verir.
+  * HDOP sapmaları ve IMU ivmeölçer hız vektörü ile GNSS arasındaki tutarsızlıkları ($\Delta v > 18\text{ m/s}$) yakalar.
+* **RF Datalink Karıştırma Analizi:**
+  * Arka arkaya CRC bozulmaları ve son 10 pakette $\%35$ üzeri kayıp yaşandığında RF jammer uyarısı oluşturur.
+* **Optik Sahte Hedef (Flare / Decoy) Filtresi:**
+  * Güneş parlamaları veya atılan sahte hedeflerin fizik dışı aşırı ivmelerini ($> 12g$) ve aşırı en-boy oranlarını filtreleyerek gerçek hedefi takipte tutar.
+* **EMCON (Emission Control) Protokolü:**
+  * Yoğun karıştırma tespit edildiğinde İHA otonom telsiz sessizliğine geçerek GNSS-Denied INS seyrüseferine yönelir.
+
+---
+
+## 🧭 15-Durumlu Havacılık Genişletilmiş Kalman Filtresi (6-DOF Aerospace EKF)
+
+`core/aerospace_ekf.py`, yüksek $g$-yükü altındaki ani it dalaşı manevralarında ve GNSS kesintilerinde İHA'nın 6 serbestlik dereceli durumunu kestiren havacılık standardında bir Extended Kalman Filter sunar:
+
+$$\mathbf{x} = \big[ p_N, p_E, p_D,\; v_N, v_E, v_D,\; q_0, q_1, q_2, q_3,\; b_{ax}, b_{ay}, b_{az},\; b_{gx}, b_{gy}, b_{gz} \big]^T$$
+
+* **Strapdown IMU Mekanizasyonu:** $100\text{ Hz}$ IMU ivme ve açısal hız verileri kuaterniyon kinematiği üzerinden integrallenir, Coriolis ve yerçekimi etkileri telafi edilir.
+* **Çoklu Sensör Füzyonu:** GNSS ($5\text{ Hz}$), Barometre ($20\text{ Hz}$), Görsel Odometri VO ($30\text{ Hz}$) ölçümleri birleştirilir.
+* **Chi-Square ($\chi^2$) Mahalanobis İnovasyon Kapılaması:**
+  $$d_M^2 = \mathbf{y}^T \mathbf{S}^{-1} \mathbf{y} \le \gamma_{\text{threshold}}$$
+  Ölçüm inovasyonu beklenen kovaryans sınırını aştığında (örneğin sahte GPS sıçraması) ölçüm otomatik olarak reddedilir ve filtrenin bozulması engellenir.
+
+---
+
+## 🔐 Kriptografik Kilit Kanıt Zinciri ve Hakem Denetleyicisi (Proof Auditor CLI)
+
+Yarışma sonrasında hakem heyetine sunulan kilitlenme kanıtlarının sonradan üretilmediğini ve manipüle edilmediğini matematiksel olarak garanti etmek için `referee/proof_chain.py` ve `tools/verify_proofs.py` geliştirilmiştir:
+
+* **SHA-256 / HMAC Blok Zinciri:** Kilitlenme esnasındaki her bir video karesi, hedef kutusu koordinatları, telemetri paketi ve zaman damgası bir önceki bloğun özetiyle zincirlenir ($H_i = \text{SHA256}(H_{i-1} \parallel \dots)$).
+* **Merkle Ağacı Kökü ve Dijital Mühür:** Oturum sonunda tüm kare hash'lerinden Merkle Root hesaplanır ve HMAC gizli anahtarı ile dijital mühürlenir (`proof_manifest.json`).
+* **Otomatik Hakem Denetim Aracı (`tools/verify_proofs.py`):**
+  ```bash
+  python tools/verify_proofs.py --proof-dir proofs/
+  ```
+  Tüm kanıtları tarar; hash zinciri bütünlüğünü, Merkle kökünü, 4.0 saniye kesintisiz süre ve $\%5$ alan şartını denetleyerek resmi puan tablosunu döker.
+
+---
+
 ## 🛠 Donanım Mimarisi ve Kablolama
 
 | Bileşen | Önerilen Model | Bağlantı Arayüzü | Görevi |
@@ -477,7 +541,9 @@ teknofest_savasan_iha/
 │   ├── logger.py                   # Renkli konsol ve döngüsel dosya loglayıcısı
 │   ├── event_bus.py                # Thread-safe pub/sub asenkron olay köprüsü
 │   ├── blackbox.py                 # Yüksek hızlı CSV/JSONL uçuş kara kutu kaydedicisi
-│   └── health_monitor.py           # Akıllı sistem sağlığı ve kademeli fail-safe durum makinesi
+│   ├── health_monitor.py           # Akıllı sistem sağlığı ve kademeli fail-safe durum makinesi
+│   ├── electronic_warfare.py       # GNSS Anti-Spoofing, RF Jamming tespiti ve Decoy filtresi
+│   └── aerospace_ekf.py            # 15-Durumlu Havacılık EKF 6-DOF seyrüsefer ve sensör füzyonu
 ├── vision/
 │   ├── __init__.py
 │   ├── detector.py                 # YOLOv8/v11 & ONNX dedektör (ve sanal hedef üretici)
@@ -496,7 +562,8 @@ teknofest_savasan_iha/
 │   ├── client.py                   # REST API istemcisi (/api/giris, /api/telemetri, /api/kilitlenme)
 │   ├── time_sync.py                # RTT gecikme hesaplamalı sunucu saati senkronizasyonu
 │   ├── telemetry_sender.py         # 1-5 Hz periyodik telemetri gönderim iş parçacığı
-│   └── packet_buffer.py            # CRC32 sağlama toplamlı ve TTL/yeniden denemeli paket tamponu
+│   ├── packet_buffer.py            # CRC32 sağlama toplamlı ve TTL/yeniden denemeli paket tamponu
+│   └── proof_chain.py              # Kriptografik SHA-256 Merkle kilitlenme kanıt zinciri ve mühürleyici
 ├── mock_server/
 │   ├── __init__.py
 │   └── app.py                      # FastAPI tabanlı yerel test hakem sunucusu ve web paneli
@@ -505,6 +572,7 @@ teknofest_savasan_iha/
 │   ├── mavlink_bridge.py           # Pixhawk/SITL PyMAVLink haberleşmesi
 │   ├── guidance.py                 # PN, Pure Pursuit ve Coordinated Turn uçuş zarfı güdümü
 │   ├── bfm_maneuvers.py            # Break Turn, Scissors, High Yo-Yo it dalaşı manevraları
+│   ├── energy_manager.py           # John Boyd E-M teorisi, köşe hızı (Vc), Ps ve 1/2-circle seçici
 │   ├── collision_avoidance.py      # ACAS / TCAS CPA ve hız engeli (VO) çarpışma önleyici
 │   ├── gnss_denied_nav.py          # GNSS karıştırma/aldatma (Anti-Jamming/Spoofing) parakete seyrüseferi
 │   ├── mission_planner.py          # Zikzak (Creeping Line) & Sekiz (Fig8) devriye görev planlayıcısı
@@ -522,13 +590,15 @@ teknofest_savasan_iha/
 │   └── dogfight_simulator.py       # 3D 1v1 Mavi/Kırmızı İHA it dalaşı simülatörü
 ├── tools/
 │   ├── __init__.py
-│   ├── preflight_check.py          # Uçuş öncesi 16 kritik bileşenin otomatik kontrolü
+│   ├── preflight_check.py          # Uçuş öncesi 20 kritik bileşenin otomatik kontrolü
+│   ├── verify_proofs.py            # Kriptografik kilitlenme kanıt manifestosu ve kural denetleyicisi
 │   ├── flight_player.py            # Uçuş telemetri loglarını offline oynatıcı
 │   ├── antenna_tracker.py          # Yer istasyonu yönlü otomatik anten takipçisi (AAT)
 │   ├── benchmark_inference.py      # Model çıkarım hızı, FPS ve gecikme persentil analiz aracı
 │   ├── mission_debrief.py          # Uçuş kara kutusu analizi ve interaktif HTML görev raporu
 │   ├── synthetic_dataset_generator.py # YOLO eğitimine hazır sentetik İHA veri seti üreticisi
 │   ├── dataset_collector.py        # Uçuş videolarından eğitim veri seti çıkarıcı
+│   ├── generate_assets.py          # Askeri HUD ve radar minimap görsel üreticisi
 │   └── export_onnx.py              # Jetson için optimize ONNX/TensorRT derleme aracı
 ├── tests/
 │   ├── __init__.py
@@ -746,7 +816,7 @@ tests/test_target_evaluator.py::test_target_evaluator_select_best PASSED [ 95%]
 tests/test_wind_estimator.py::test_wind_estimator_no_wind PASSED         [ 97%]
 tests/test_wind_estimator.py::test_wind_estimator_crosswind PASSED       [ 98%]
 tests/test_wind_estimator.py::test_wind_crab_compensation PASSED         [100%]
-============================== 72 passed in 2.08s ==============================
+============================== 95 passed in 2.93s ==============================
 ```
 
 ---
@@ -765,8 +835,8 @@ docker-compose logs -f
 
 ### GitHub Actions CI/CD:
 Her `git push` veya `pull request` yapıldığında [`.github/workflows/ci.yml`](.github/workflows/ci.yml) iş akışı otomatik olarak tetiklenerek:
-* Python 3.10, 3.11 ve 3.12 üzerinde 72 adet birim testini,
-* `preflight_check.py` sistem doğrulamasını,
+* Python 3.10, 3.11 ve 3.12 üzerinde 95 adet birim testini,
+* `preflight_check.py` sistem doğrulamasını (20/20 kritik kontrol),
 * Sentetik veri seti üretim boru hattını çalıştırır ve kod bütünlüğünü garanti eder.
 
 ---

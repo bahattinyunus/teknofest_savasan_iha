@@ -9,23 +9,33 @@ import cv2
 import numpy as np
 
 from core.logger import setup_logger, logger
-from core.models import TelemetriPaketi, KilitDurumu, ZamanBilgisi
+from core.models import TelemetriPaketi, KilitDurumu, ZamanBilgisi, EWAlertLevel
 from core.event_bus import (
     bus,
     EVENT_FRAME_PROCESSED,
     EVENT_TELEMETRY_UPDATED,
     EVENT_LOCK_SUCCESS,
-    EVENT_GEOFENCE_ALERT
+    EVENT_GEOFENCE_ALERT,
+    EVENT_EW_ALERT,
+    EVENT_ENERGY_STATE_UPDATED
 )
+from core.blackbox import FlightBlackBox
+from core.health_monitor import HealthMonitor
+from core.electronic_warfare import ElectronicWarfareSuite
+from core.aerospace_ekf import AerospaceEKF
 from vision.detector import YoloDetector, MockDetector
 from vision.tracker import KalmanTracker
 from vision.lock_engine import LockEngine
 from vision.visualizer import HUDVisualizer
 from referee.client import RefereeClient
 from referee.telemetry_sender import TelemetrySenderThread
+from referee.proof_chain import CryptographicProofChain
 from autopilot.mavlink_bridge import MavlinkBridge, MockMavlinkBridge
 from autopilot.geofence import GeofenceMonitor
 from autopilot.guidance import GuidanceController
+from autopilot.energy_manager import EnergyManeuverabilityGovernor
+from autopilot.collision_avoidance import CollisionAvoidanceSystem
+from autopilot.mission_planner import TacticalMissionPlanner
 from simulation.virtual_camera import VirtualCameraFeed
 
 
@@ -48,6 +58,16 @@ class AeroCombatSystem:
         self.referee_client = None
         self.telemetry_sender = None
         self.virtual_camera = None
+
+        # Gelişmiş Aviyonik, Savunma ve Seyrüsefer Modülleri
+        self.health_monitor = None
+        self.blackbox = None
+        self.energy_manager = None
+        self.ew_suite = None
+        self.ekf = None
+        self.proof_chain = None
+        self.collision_avoidance = None
+        self.tactical_planner = None
 
         self._init_subsystems()
         self._setup_events()
@@ -150,6 +170,28 @@ class AeroCombatSystem:
             if not is_safe:
                 logger.warning(f"UYARI: {msg}")
 
+            # Elektronik Harp (GNSS Sağlık ve Karıştırma Denetimi)
+            gnss_ok, ew_msg = self.ew_suite.update_gnss_sanity(
+                lat=packet.IHA_enlem,
+                lon=packet.IHA_boylam,
+                alt_m=packet.IHA_irtifa,
+                reported_speed_mps=packet.IHA_hiz
+            )
+            if not gnss_ok:
+                logger.warning(f"[EW ALARM] {ew_msg}")
+                bus.emit(EVENT_EW_ALERT, alert_msg=ew_msg, status=self.ew_suite.get_status())
+
+            # John Boyd E-M Uçuş Zarfı ve Enerji Durumu
+            energy_state = self.energy_manager.evaluate_combat_energy(
+                own_alt_m=packet.IHA_irtifa,
+                own_airspeed_mps=packet.IHA_hiz
+            )
+            bus.emit(EVENT_ENERGY_STATE_UPDATED, energy=energy_state)
+
+            # Kara Kutu Telemetri Kaydı
+            if self.blackbox:
+                self.blackbox.record_telemetry(packet)
+
             bus.emit(EVENT_TELEMETRY_UPDATED, telemetri=packet)
             return packet
 
@@ -165,10 +207,28 @@ class AeroCombatSystem:
             height=cam_cfg.get("yukseklik", 720)
         )
 
+        # 10. Gelişmiş Aviyonik, Savunma ve Seyrüsefer Modülleri
+        self.blackbox = FlightBlackBox(log_dir=gen_cfg.get("kara_kutu_dizini", "logs/blackbox"))
+        self.health_monitor = HealthMonitor()
+        self.energy_manager = EnergyManeuverabilityGovernor()
+        self.ew_suite = ElectronicWarfareSuite()
+        self.ekf = AerospaceEKF()
+        self.ekf.initialize_state(pos_ned=(0.0, 0.0, -50.0), vel_ned=(20.0, 0.0, 0.0))
+        self.proof_chain = CryptographicProofChain()
+        self.collision_avoidance = CollisionAvoidanceSystem()
+        self.tactical_planner = TacticalMissionPlanner()
+        self._frame_count = 0
+
     def _setup_events(self):
-        """Olay dinleyicileri (Kilitlenme tamamlandığında sunucuya otomatik bildir vb.)"""
+        """Olay dinleyicileri (Kilitlenme tamamlandığında sunucuya otomatik bildir, kanıt zincirini mühürle vb.)"""
         def on_lock_success(paket, kanit_yolu, **kwargs):
             logger.info(f"Olay Yakalandı: Kilit Başarılı -> Kanıt: {kanit_yolu}")
+            
+            # Kriptografik kanıt manifestosunu mühürle ve kaydet
+            if self.proof_chain and self.proof_chain.is_active:
+                proof_dir = os.path.dirname(kanit_yolu) if kanit_yolu else "proofs"
+                self.proof_chain.seal_and_export_manifest(output_dir=proof_dir)
+
             # Hakem sunucusuna kilitlenme paketini anında gönder
             threading.Thread(
                 target=self.referee_client.kilitlenme_bilgisi_gonder,
@@ -247,6 +307,14 @@ class AeroCombatSystem:
             # 2. Çoklu Hedef Takibi (Kalman Filter / ByteTrack)
             tracked_boxes = self.tracker.update(detections)
 
+            # Elektronik Harp: Optik Sahte Hedef / Flare Filtreleme
+            if self.ew_suite:
+                tracked_boxes = self.ew_suite.filter_visual_decoys(
+                    detected_boxes=tracked_boxes,
+                    active_target=self.lock_engine.aktif_hedef,
+                    dt=dt
+                )
+
             # 3. Kilitlenme Durum Makinesi
             server_offset = self.referee_client.time_sync.offset_ms
             durum, sure, aktif_hedef = self.lock_engine.update(
@@ -255,8 +323,26 @@ class AeroCombatSystem:
                 server_offset_ms=server_offset
             )
 
-            # 4. HUD Çizimi
+            # Kriptografik Kanıt Zinciri Yönetimi
             current_tel = self.autopilot.get_telemetry_packet(is_locked=(1 if durum == KilitDurumu.LOCKED else 0))
+            if durum == KilitDurumu.LOCKING and aktif_hedef:
+                if not self.proof_chain.is_active:
+                    self.proof_chain.start_chain(
+                        lock_id=f"LOCK_{int(time.time())}",
+                        team_id=self.config.get("general", {}).get("takim_numarasi", 1)
+                    )
+                self.proof_chain.add_frame_proof(
+                    frame_index=self._frame_count,
+                    frame=frame,
+                    target_box=aktif_hedef,
+                    telemetry=current_tel
+                )
+            elif durum == KilitDurumu.IDLE and self.proof_chain.is_active:
+                self.proof_chain.is_active = False
+
+            self._frame_count += 1
+
+            # 4. HUD Çizimi
             hud_frame = self.visualizer.draw_hud(
                 frame=frame,
                 boxes=tracked_boxes,
@@ -316,6 +402,8 @@ class AeroCombatSystem:
             self.telemetry_sender.stop_loop()
         if self.autopilot:
             self.autopilot.stop()
+        if self.blackbox:
+            self.blackbox.close()
         logger.info("AeroCombat sistemi güvenle kapatıldı.")
 
 
