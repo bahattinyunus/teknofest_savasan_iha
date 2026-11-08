@@ -55,4 +55,7 @@ EVENT_GEOFENCE_ALERT = "geofence_alert"
 EVENT_SERVER_STATUS = "server_status"
 EVENT_EW_ALERT = "ew_alert"
 EVENT_ENERGY_STATE_UPDATED = "energy_state_updated"
+EVENT_RWR_ALERT = "rwr_alert"
+EVENT_TACTICAL_MANEUVER = "tactical_maneuver"
+
 

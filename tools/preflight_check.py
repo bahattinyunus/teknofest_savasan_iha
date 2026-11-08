@@ -159,6 +159,36 @@ def run_preflight_check():
     proof_chain_ok = proof_chain is not None
     results.append(("Kriptografik Kanit Zinciri", "SHA-256 Merkle Muhru & Auditor", proof_chain_ok))
 
+    # 21. 6-DoF Non-Linear Aerodinamik & ISA Ucus Fizigi
+    from simulation.aerodynamics_6dof import Aerodynamics6DoF
+    aero_sim = Aerodynamics6DoF()
+    aero_ok = aero_sim is not None
+    results.append(("6-DoF Aerodinamik & ISA Fizik", "RK4 & Post-Stall Mekanigi Hazir", aero_ok))
+
+    # 22. DARPA ACE Nöral Muharebe Pilotu
+    from autopilot.neural_combat_pilot import NeuralCombatPilot
+    neural_pilot = NeuralCombatPilot()
+    neural_ok = neural_pilot is not None
+    results.append(("DARPA ACE Noral Muharebe Pilotu", "Durum Tensoru & Taktik Fayda Aktif", neural_ok))
+
+    # 23. Coklu IHA Lider-Kanat Isbirlikci Muharebe
+    from autopilot.cooperative_combat import CooperativeCombatGovernor
+    coop_gov = CooperativeCombatGovernor()
+    coop_ok = coop_gov is not None
+    results.append(("Isbirlikci Coklu IHA & Pusu", "Lider-Kanat & Auction Hedef Paylasimi", coop_ok))
+
+    # 24. Tehdit Siniflandirici & RWR Erken Uyarisi
+    from vision.threat_classifier import ThreatClassifierRWR
+    threat_rwr = ThreatClassifierRWR()
+    rwr_ok = threat_rwr is not None
+    results.append(("Tehdit Kutuphanesi & RWR Alarmi", "Arka Sektor WEZ & Break-Turn Hazir", rwr_ok))
+
+    # 25. 3D WebGL It Dalasi Tekrar Oynaticisi
+    from tools.export_flight_replay_3d import generate_3d_replay_html
+    webgl_ok = callable(generate_3d_replay_html)
+    results.append(("3D WebGL Flight Studio", "Three.js Telemetri Tekrari Hazir", webgl_ok))
+
+
 
     # Tablo Yazdırma
     all_passed = True

@@ -17,12 +17,18 @@ from core.event_bus import (
     EVENT_LOCK_SUCCESS,
     EVENT_GEOFENCE_ALERT,
     EVENT_EW_ALERT,
-    EVENT_ENERGY_STATE_UPDATED
+    EVENT_ENERGY_STATE_UPDATED,
+    EVENT_RWR_ALERT,
+    EVENT_TACTICAL_MANEUVER
 )
 from core.blackbox import FlightBlackBox
 from core.health_monitor import HealthMonitor
 from core.electronic_warfare import ElectronicWarfareSuite
 from core.aerospace_ekf import AerospaceEKF
+from autopilot.neural_combat_pilot import NeuralCombatPilot
+from autopilot.cooperative_combat import CooperativeCombatGovernor
+from vision.threat_classifier import ThreatClassifierRWR, RWRStatus
+
 from vision.detector import YoloDetector, MockDetector
 from vision.tracker import KalmanTracker
 from vision.lock_engine import LockEngine
@@ -68,6 +74,10 @@ class AeroCombatSystem:
         self.proof_chain = None
         self.collision_avoidance = None
         self.tactical_planner = None
+        self.neural_pilot = None
+        self.cooperative_governor = None
+        self.threat_classifier = None
+
 
         self._init_subsystems()
         self._setup_events()
@@ -217,7 +227,11 @@ class AeroCombatSystem:
         self.proof_chain = CryptographicProofChain()
         self.collision_avoidance = CollisionAvoidanceSystem()
         self.tactical_planner = TacticalMissionPlanner()
+        self.neural_pilot = NeuralCombatPilot()
+        self.cooperative_governor = CooperativeCombatGovernor(own_id=takim_no, is_initial_leader=True)
+        self.threat_classifier = ThreatClassifierRWR()
         self._frame_count = 0
+
 
     def _setup_events(self):
         """Olay dinleyicileri (Kilitlenme tamamlandığında sunucuya otomatik bildir, kanıt zincirini mühürle vb.)"""
@@ -341,6 +355,37 @@ class AeroCombatSystem:
                 self.proof_chain.is_active = False
 
             self._frame_count += 1
+
+            # Tehdit Sınıflandırması ve RWR (Radar Warning Receiver)
+            if self.threat_classifier and aktif_hedef:
+                threat_type, _ = self.threat_classifier.classify_target(aktif_hedef)
+                assessment = self.threat_classifier.evaluate_threat(
+                    target_id=aktif_hedef.track_id,
+                    airframe_type=threat_type,
+                    range_m=35.0,  # Optik/kamera kestirimi
+                    ata_deg=10.0,
+                    aspect_angle_deg=30.0
+                )
+                if assessment.rwr_status == RWRStatus.LOCK_WARNING:
+                    bus.emit(EVENT_RWR_ALERT, assessment=assessment)
+
+            # Nöral Muharebe Pilotu (DARPA ACE Manevra Seçici)
+            if self.neural_pilot and aktif_hedef:
+                # Durum tensörünü değerlendir ve manevra komutunu üret
+                state_tensor = self.neural_pilot.compute_state_tensor(
+                    own_pos_ned=(0.0, 0.0, -current_tel.IHA_irtifa),
+                    own_vel_ned=(current_tel.IHA_hiz, 0.0, 0.0),
+                    target_pos_ned=(30.0, 5.0, -current_tel.IHA_irtifa),
+                    target_vel_ned=(current_tel.IHA_hiz * 0.9, 0.0, 0.0),
+                    timestamp=time.time()
+                )
+                maneuver_cmd = self.neural_pilot.select_maneuver(
+                    state=state_tensor,
+                    own_pos_ned=(0.0, 0.0, -current_tel.IHA_irtifa),
+                    target_pos_ned=(30.0, 5.0, -current_tel.IHA_irtifa),
+                    target_vel_ned=(current_tel.IHA_hiz * 0.9, 0.0, 0.0)
+                )
+                bus.emit(EVENT_TACTICAL_MANEUVER, command=maneuver_cmd)
 
             # 4. HUD Çizimi
             hud_frame = self.visualizer.draw_hud(

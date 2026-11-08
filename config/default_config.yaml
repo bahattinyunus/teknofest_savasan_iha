@@ -163,3 +163,31 @@ cift_kamera_fuzyonu:
   genis_hfov_deg: 90.0                # Genis aci kamera (durumsal farkindalik)
   zoom_hfov_deg: 35.0                 # Dar aci / telefoto kamera (uzak menzil %5 kilit)
   iou_esigi: 0.25
+
+aerodinamik_6dof:
+  aktif: true                         # 6-DoF Non-Linear Uçuş Dinamiği Motoru
+  kutle_kg: 3.5
+  kanat_acikligi_m: 1.6
+  kanat_alani_m2: 0.55
+  max_itki_n: 28.0
+  max_g_yuk: 6.0
+
+neural_combat_pilot:
+  aktif: true                         # DARPA ACE / AlphaDogfight Taktik Nöral Karar Ajanı
+  corner_speed_mps: 24.0
+  max_roll_deg: 65.0
+  max_pitch_deg: 28.0
+  min_hiz_mps: 14.0
+  max_hiz_mps: 38.0
+
+isbirlikci_muharebe:
+  aktif: true                         # Lider-Kanat / CCA Çoklu İHA Taktik İşbirliği
+  formasyon: "LINE_ABREAST"           # LINE_ABREAST, WEDGE, TRAIL, COMBAT_BOX
+  ayrilma_mesafesi_m: 40.0
+  tuzak_ve_pusu_aktif: true           # Drag-and-Bag (Yem ve Pusu) doktrini
+
+tehdit_ve_rwr:
+  aktif: true                         # Radar Warning Receiver (RWR) Arka Sektör Erken Uyarısı
+  kilit_tehlike_esigi_sn: 1.2         # Düşman arkamızda bu kadar sn kalırsa RWR ALARM
+  kacinma_acisi_deg: 90.0             # Break turn kaçış açısı
+

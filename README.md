@@ -8,7 +8,7 @@
 [![Autopilot](https://img.shields.io/badge/Autopilot-ArduPilot%20%2F%20PX4%20(MAVLink)-1E88E5)](https://ardupilot.org/)
 [![FastAPI](https://img.shields.io/badge/Mock%20Server-FastAPI%20%2F%20Uvicorn-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![GUI](https://img.shields.io/badge/GCS%20GUI-PyQt6-41CD52?logo=qt&logoColor=white)](https://riverbankcomputing.com/software/pyqt/)
-[![Tests](https://img.shields.io/badge/Tests-95%20Passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-108%20Passed-brightgreen)](tests/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](Dockerfile)
 [![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
@@ -28,19 +28,25 @@
 2. [Sistem Mimarisi](#-sistem-mimarisi)
 3. [Şartnameye %100 Uyumlu Kilitlenme Motoru](#-şartnameye-100-uyumlu-kilitlenme-motoru)
 4. [Hava-Hava Güdüm Kanunları ve Uçuş Dinamiği](#-hava-hava-güdüm-kanunları-ve-uçuş-dinamiği)
-5. [Hakem Sunucusu Entegrasyonu ve Saat Senkronizasyonu](#-hakem-sunucusu-entegrasyonu-ve-saat-senkronizasyonu)
-6. [Dahili Mock Hakem Sunucusu](#-dahili-mock-hakem-sunucusu)
-7. [Geofence ve Sınır Güvenliği](#-geofence-ve-sınır-güvenliği)
-8. [Askeri Standartta Head-Up Display (HUD) ve GCS](#-askeri-standartta-head-up-display-hud-ve-gcs)
-9. [Donanım Mimarisi ve Kablolama](#-donanım-mimarisi-ve-kablolama)
-10. [Dizin Yapısı](#-dizin-yapısı)
-11. [Kurulum ve Hızlı Başlangıç](#-kurulum-ve-hızlı-başlangıç)
-12. [Uçuş Öncesi Kontrol (Pre-Flight Check)](#-uçuş-öncesi-kontrol-pre-flight-check)
-13. [Uçuş Telemetri Oynatıcısı (Log Player)](#-uçuş-telemetri-oynatıcısı-log-player)
-14. [Model Eğitimi ve ONNX / TensorRT Derleme](#-model-eğitimi-ve-onnx--tensorrt-derleme)
-15. [Birim Testleri](#-birim-testleri)
-16. [Saha İpuçları ve Sık Karşılaşılan Sorunlar (SSS)](#-saha-ipuçları-ve-sık-karşılaşılan-sorunlar-sss)
-17. [Lisans](#-lisans)
+5. [6-DoF Non-Linear Uçuş Dinamiği ve Atmosfer Modeli](#-6-dof-non-linear-uçuş-dinamiği-ve-atmosfer-modeli-isa)
+6. [DARPA ACE Esinli Nöral Muharebe Pilotu](#-darpa-ace-esinli-nöral-muharebe-pilotu-neural-combat-pilot)
+7. [Lider-Kanat / CCA Çoklu İHA İşbirlikçi İt Dalaşı](#-lider-kanat--cca-çoklu-iha-i̇şbirlikçi-i̇t-dalaşı-cooperative-combat)
+8. [Tehdit Kütüphanesi ve RWR Erken Uyarısı](#-tehdit-kütüphanesi-ve-rwr-radar-warning-receiver-erken-uyarısı)
+9. [3D WebGL İt Dalaşı Tekrar Oynatıcısı](#-3d-webgl-i̇t-dalaşı-tekrar-oynatıcısı-threejs-flight-studio)
+10. [Hakem Sunucusu Entegrasyonu ve Saat Senkronizasyonu](#-hakem-sunucusu-entegrasyonu-ve-saat-senkronizasyonu)
+11. [Dahili Mock Hakem Sunucusu](#-dahili-mock-hakem-sunucusu)
+12. [Geofence ve Sınır Güvenliği](#-geofence-ve-sınır-güvenliği)
+13. [Askeri Standartta Head-Up Display (HUD) ve GCS](#-askeri-standartta-head-up-display-hud-ve-gcs)
+14. [Donanım Mimarisi ve Kablolama](#-donanım-mimarisi-ve-kablolama)
+15. [Dizin Yapısı](#-dizin-yapısı)
+16. [Kurulum ve Hızlı Başlangıç](#-kurulum-ve-hızlı-başlangıç)
+17. [Uçuş Öncesi Kontrol (Pre-Flight Check)](#-uçuş-öncesi-kontrol-pre-flight-check)
+18. [Uçuş Telemetri Oynatıcısı (Log Player)](#-uçuş-telemetri-oynatıcısı-log-player)
+19. [Model Eğitimi ve ONNX / TensorRT Derleme](#-model-eğitimi-ve-onnx--tensorrt-derleme)
+20. [Birim Testleri](#-birim-testleri)
+21. [Saha İpuçları ve Sık Karşılaşılan Sorunlar (SSS)](#-saha-ipuçları-ve-sık-karşılaşılan-sorunlar-sss)
+22. [Lisans](#-lisans)
+
 
 ---
 
@@ -512,6 +518,85 @@ Yarışma sonrasında hakem heyetine sunulan kilitlenme kanıtlarının sonradan
 
 ---
 
+## ✈️ 6-DoF Non-Linear Uçuş Dinamiği ve Atmosfer Modeli (ISA)
+
+`simulation/aerodynamics_6dof.py`, sabit kanatlı avcı İHA'larının karmaşık manevralarını, yüksek hücum açısı (AoA) dinamiklerini ve atmosferik etkileri en yüksek hassasiyetle simüle eden 6 Serbestlik Dereceli (6-DoF) Navier-Stokes türevi bir uçuş mekaniği çözücüsüdür:
+
+* **Uluslararası Standart Atmosfer (ISA):** Deniz seviyesinden 11.000m'ye kadar irtifaya bağlı hava yoğunluğu $\rho(h)$, ortam basıncı $P(h)$, sıcaklık $T(h)$ ve ses hızı $a(h)$ hesaplaması.
+* **Gövde Ekseni (Body-frame) Kuvvet & Momentler:**
+  $$\dot{\mathbf{v}}_B = \mathbf{\omega}_B \times \mathbf{v}_B + \frac{\mathbf{F}_{\text{aero}} + \mathbf{F}_{\text{itki}} + \mathbf{F}_{\text{yercekimi}}}{m}$$
+  $$\mathbf{I} \dot{\mathbf{\omega}}_B + \mathbf{\omega}_B \times (\mathbf{I} \mathbf{\omega}_B) = \mathbf{M}_{\text{aero}} + \mathbf{M}_{\text{itki}}$$
+* **Non-Linear Perdövites (Post-Stall) Modellemesi:** Kritik hücum açısı ($\alpha_{\text{stall}} \approx 14.5^\circ$) aşıldığında taşıma kaybı ve indüklenmiş sürükleme artışı dinamik olarak devreye girer.
+* **4. Derece Runge-Kutta (RK4) İntegratörü:** Yüksek G-yükü ve hızlı yatış manevralarında sayısal sapmayı önleyen yüksek çözünürlüklü zaman entegrasyonu.
+* **Düz Uçuş Trim Çözücüsü (`trim_level_flight`):** İstenen hava sürati ve irtifada asansör dümeni ($\delta_e$) ve motor gazını anında dengeleyen otonom analitik trim hesaplayıcı.
+
+---
+
+## 🧠 DARPA ACE Esinli Nöral Muharebe Pilotu (Neural Combat Pilot)
+
+`autopilot/neural_combat_pilot.py`, DARPA'nın ünlü **Air Combat Evolution (ACE)** ve **AlphaDogfight** programlarından ilham alarak geliştirilmiş gelişmiş bir yapay zeka it dalaşı karar ajanına sahiptir:
+
+* **Çok Boyutlu Muharebe Durum Tensörü (Combat State Tensor):**
+  * **ATA (Antenna Train Angle):** Kendi hız vektörümüz ile hedef görüş hattı (LOS) arasındaki burun hatası ($0^\circ - 180^\circ$).
+  * **AA (Aspect Angle):** Hedefin kuyruk ekseni ile görüş hattı arasındaki açı. $0^\circ$ tam kuyruk kovalamacası (Tail Chase), $180^\circ$ kafa kafaya (Head-on) geçiştir.
+  * **Kapanma Hızı ($V_c = -\dot{R}$):** Hedefe yaklaşma veya uzaklaşma hızı.
+  * **Özgül Enerji Avantajı ($\Delta E_s$):** Kinetik ve potansiyel enerjilerin farkı ($E_{s,\text{own}} - E_{s,\text{tgt}}$).
+  * **WEZ (Weapons Employment Zone) Skoru:** Şartnameye uygun kilitlenme olasılık fonksiyonu.
+* **Taktik Rol ve Manevra Seçicisi:**
+  * **Lead Pursuit:** Hedef keskin dönüş yaparken dönüş dairesinin önüne doğru önleme açısıyla yönelme.
+  * **Pure Pursuit:** Mükemmel hizalanmada 4.0 saniye kesintisiz kilitlenmeyi muhafaza etme.
+  * **High Yo-Yo:** Hedefe aşırı hızlı yaklaşıldığında (overshoot riski), kinetik enerjiyi irtifaya çevirerek dikey tırmanış ve ardından hedefin arkasına çökme.
+  * **Low Yo-Yo:** Hedef menzili açtığında dalış yaparak sürat kazanma ve menzili kapatma.
+  * **3.5G Break Turn & Scissors:** Düşman arkamıza kilitlenmeye çalıştığında ani yüksek G'li dönüş ile silah ekseninden kaçış.
+
+---
+
+## 🤝 Lider-Kanat / CCA Çoklu İHA İşbirlikçi İt Dalaşı (Cooperative Combat)
+
+Modern hava muharebesinde otonom işbirliği kritik önem taşır. `autopilot/cooperative_combat.py`, TEKNOFEST ve geleceğin **Collaborative Combat Aircraft (CCA)** konseptlerini uygular:
+
+* **Dinamik Formasyon Geometrisi:**
+  * **Line-Abreast (Taktik Dağılım):** 40m lateral ayrılma ile geniş radar/kamera tarama cephesi.
+  * **Wedge (Kama):** V formasyonu ile karşılıklı ateş ve kilitlenme desteği.
+  * **Combat Box (Hava Muharebe Kutusu):** Dikey irtifa tabakalandırmasıyla çok katmanlı savunma.
+* **"Tuzak ve Pusu" (Drag-and-Bag / Bait-and-Hook) Doktrini:**
+  * Bir kanat uçağının arkasına düşman kilitlenmeye çalıştığında kanat uçağı otonom olarak **Yem (Bait)** rolüne geçer, düşmanı doğrusal kaçış ve makasla peşine takar.
+  * Uçuş Lideri (Flight Lead) ise yüksek irtifa bekleme noktasından (perch) dalarak düşmanın 6 hizasına girer ve rakip İHA'ya anında kilitlenir!
+* **Açık Artırma (Auction) ile Çakışmasız Hedef Dağıtımı:**
+  * Çoklu düşman algılandığında minimum geometrik mesafe ve enerji maliyetiyle her İHA'ya farklı bir hedef otonom olarak tahsis edilir.
+* **Lider Devri (Heartbeat & Automatic Failover):**
+  * Lider İHA'nın bağlantısı koptuğunda veya görev dışı kaldığında en kıdemli kanat uçağı kesintisiz olarak Liderlik görevini devralır.
+
+---
+
+## 🚨 Tehdit Kütüphanesi ve RWR (Radar Warning Receiver) Erken Uyarısı
+
+`vision/threat_classifier.py` ve `core/threat_library.py`, tespit edilen hava hedeflerini sınıflandırarak pilota/otopilota erken uyarı sağlar:
+
+* **Optik & Kinematik İmza Analizi:** Bounding box en-boy oranı ($w/h$) ve doğrusal hız profili üzerinden hedefi **Sabit Kanat Avcı İHA**, **Döner Kanat Kamikaze Drone**, **Keşif Planörü** veya **Optik Yanıltıcı (Flare)** olarak sınıflandırır.
+* **Radar Warning Receiver (RWR) Algoritması:**
+  * Düşman burnunun bizim arkamızdaki WEZ tehlike hacminde kalış süresini takip eder.
+  * **CLEAR $\to$ SEARCH $\to$ TRACK $\to$ LOCK_WARNING (Kritik Sesli/Görsel Alarm!)**
+  * Kilit tehlikesi algılandığında yönelime bağlı en uygun kaçış vektörünü (`evasive_break_dir: LEFT / RIGHT`) anında otopilota emreder.
+
+---
+
+## 🌐 3D WebGL İt Dalaşı Tekrar Oynatıcısı (Three.js Flight Studio)
+
+`tools/export_flight_replay_3d.py`, kara kutu veya simülasyon kayıtlarını modern tarayıcılarda hiçbir harici sunucuya ihtiyaç duymadan çalışan tek dosyalık interaktif bir 3D WebGL stüdyosuna dönüştürür:
+
+```bash
+# Sentetik veya kaydedilmiş uçuş logundan interaktif 3D HTML üret:
+python tools/export_flight_replay_3d.py
+```
+
+* **3D Hava Sahası:** NED koordinatlarında zemin ızgarası, irtifa basamakları ve Geofence emniyet duvarları.
+* **Taktik Uçak Modelleri:** Mavi Kendi Uçağımız (Ownship) ve Kırmızı Düşman (Bogey).
+* **3D WEZ Kilit Konisi:** Uçağın burnundan çıkan yarı saydam dinamik kilitlenme hacmi. Kilit tamamlandığında anında kırmızı renge dönüşür.
+* **Tam Kontrol Paneli:** Oynat/Duraklat, zaman çubuğu (timeline scrubber), oynatma hızı (0.5x, 1x, 2x, 4x), serbest kamera (OrbitControls) ve canlı telemetri kartı (hız, irtifa, mesafe, kapanma hızı, kilit durumu).
+
+---
+
 ## 🛠 Donanım Mimarisi ve Kablolama
 
 | Bileşen | Önerilen Model | Bağlantı Arayüzü | Görevi |
@@ -543,12 +628,14 @@ teknofest_savasan_iha/
 │   ├── blackbox.py                 # Yüksek hızlı CSV/JSONL uçuş kara kutu kaydedicisi
 │   ├── health_monitor.py           # Akıllı sistem sağlığı ve kademeli fail-safe durum makinesi
 │   ├── electronic_warfare.py       # GNSS Anti-Spoofing, RF Jamming tespiti ve Decoy filtresi
-│   └── aerospace_ekf.py            # 15-Durumlu Havacılık EKF 6-DOF seyrüsefer ve sensör füzyonu
+│   ├── aerospace_ekf.py            # 15-Durumlu Havacılık EKF 6-DOF seyrüsefer ve sensör füzyonu
+│   └── threat_library.py           # Sabit/Döner kanat kinematik tehdit veri tabanı
 ├── vision/
 │   ├── __init__.py
 │   ├── detector.py                 # YOLOv8/v11 & ONNX dedektör (ve sanal hedef üretici)
 │   ├── tracker.py                  # Kalman Filtresi ve IoU tabanlı çoklu hedef takipçisi
 │   ├── lock_engine.py              # 4.0 sn kesintisiz sayaç, %5 kuralı ve MP4 kanıt üreticisi
+│   ├── threat_classifier.py        # Tehdit sınıflandırıcı ve RWR arka sektör erken uyarısı
 │   ├── latency_compensator.py      # Gecikme telafisi için Delayed Kalman Filter (DKF)
 │   ├── optical_ranging.py          # Pinhole optik modeli ile 3D menzil ve NED konum kestirimi
 │   ├── multi_camera_fusion.py      # Çift kamera geniş/dar açı uzaysal optik sensör füzyonu
@@ -571,6 +658,8 @@ teknofest_savasan_iha/
 │   ├── __init__.py
 │   ├── mavlink_bridge.py           # Pixhawk/SITL PyMAVLink haberleşmesi
 │   ├── guidance.py                 # PN, Pure Pursuit ve Coordinated Turn uçuş zarfı güdümü
+│   ├── neural_combat_pilot.py      # DARPA ACE nöral çok boyutlu it dalaşı manevra politikası
+│   ├── cooperative_combat.py       # Lider-Kanat / CCA işbirlikçi it dalaşı ve tuzak/pusu doktrini
 │   ├── bfm_maneuvers.py            # Break Turn, Scissors, High Yo-Yo it dalaşı manevraları
 │   ├── energy_manager.py           # John Boyd E-M teorisi, köşe hızı (Vc), Ps ve 1/2-circle seçici
 │   ├── collision_avoidance.py      # ACAS / TCAS CPA ve hız engeli (VO) çarpışma önleyici
@@ -587,10 +676,12 @@ teknofest_savasan_iha/
 ├── simulation/
 │   ├── __init__.py
 │   ├── virtual_camera.py           # Sentetik gökyüzü ve hareketli rakip İHA video akışı
+│   ├── aerodynamics_6dof.py        # 6-DoF Non-linear ISA aerodinamik ve uçuş fiziği simülatörü
 │   └── dogfight_simulator.py       # 3D 1v1 Mavi/Kırmızı İHA it dalaşı simülatörü
 ├── tools/
 │   ├── __init__.py
 │   ├── preflight_check.py          # Uçuş öncesi 20 kritik bileşenin otomatik kontrolü
+│   ├── export_flight_replay_3d.py  # Tek dosyalık 3D WebGL / Three.js it dalaşı tekrar stüdyosu
 │   ├── verify_proofs.py            # Kriptografik kilitlenme kanıt manifestosu ve kural denetleyicisi
 │   ├── flight_player.py            # Uçuş telemetri loglarını offline oynatıcı
 │   ├── antenna_tracker.py          # Yer istasyonu yönlü otomatik anten takipçisi (AAT)
@@ -813,10 +904,13 @@ tests/test_tactical_radar.py::test_tactical_radar_rendering PASSED       [ 91%]
 tests/test_tactical_radar.py::test_tactical_radar_hud_overlay PASSED     [ 93%]
 tests/test_target_evaluator.py::test_target_evaluator_prioritizes_center_and_size PASSED [ 94%]
 tests/test_target_evaluator.py::test_target_evaluator_select_best PASSED [ 95%]
-tests/test_wind_estimator.py::test_wind_estimator_no_wind PASSED         [ 97%]
-tests/test_wind_estimator.py::test_wind_estimator_crosswind PASSED       [ 98%]
+tests/test_threat_classifier.py::test_classify_airframe_aspect_ratio PASSED [ 96%]
+tests/test_threat_classifier.py::test_rwr_threat_evaluation PASSED     [ 97%]
+tests/test_wind_estimator.py::test_wind_estimator_no_wind PASSED         [ 98%]
+tests/test_wind_estimator.py::test_wind_estimator_crosswind PASSED       [ 99%]
 tests/test_wind_estimator.py::test_wind_crab_compensation PASSED         [100%]
-============================== 95 passed in 2.93s ==============================
+============================== 108 passed in 2.81s ==============================
+
 ```
 
 ---
@@ -835,7 +929,7 @@ docker-compose logs -f
 
 ### GitHub Actions CI/CD:
 Her `git push` veya `pull request` yapıldığında [`.github/workflows/ci.yml`](.github/workflows/ci.yml) iş akışı otomatik olarak tetiklenerek:
-* Python 3.10, 3.11 ve 3.12 üzerinde 95 adet birim testini,
+* Python 3.10, 3.11 ve 3.12 üzerinde 108 adet birim testini,
 * `preflight_check.py` sistem doğrulamasını (20/20 kritik kontrol),
 * Sentetik veri seti üretim boru hattını çalıştırır ve kod bütünlüğünü garanti eder.
 
