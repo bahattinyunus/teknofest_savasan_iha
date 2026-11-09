@@ -8,7 +8,7 @@
 [![Autopilot](https://img.shields.io/badge/Autopilot-ArduPilot%20%2F%20PX4%20(MAVLink)-1E88E5)](https://ardupilot.org/)
 [![FastAPI](https://img.shields.io/badge/Mock%20Server-FastAPI%20%2F%20Uvicorn-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![GUI](https://img.shields.io/badge/GCS%20GUI-PyQt6-41CD52?logo=qt&logoColor=white)](https://riverbankcomputing.com/software/pyqt/)
-[![Tests](https://img.shields.io/badge/Tests-108%20Passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-122%20Passed-brightgreen)](tests/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](Dockerfile)
 [![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
@@ -33,19 +33,25 @@
 7. [Lider-Kanat / CCA Çoklu İHA İşbirlikçi İt Dalaşı](#-lider-kanat--cca-çoklu-iha-i̇şbirlikçi-i̇t-dalaşı-cooperative-combat)
 8. [Tehdit Kütüphanesi ve RWR Erken Uyarısı](#-tehdit-kütüphanesi-ve-rwr-radar-warning-receiver-erken-uyarısı)
 9. [3D WebGL İt Dalaşı Tekrar Oynatıcısı](#-3d-webgl-i̇t-dalaşı-tekrar-oynatıcısı-threejs-flight-studio)
-10. [Hakem Sunucusu Entegrasyonu ve Saat Senkronizasyonu](#-hakem-sunucusu-entegrasyonu-ve-saat-senkronizasyonu)
-11. [Dahili Mock Hakem Sunucusu](#-dahili-mock-hakem-sunucusu)
-12. [Geofence ve Sınır Güvenliği](#-geofence-ve-sınır-güvenliği)
-13. [Askeri Standartta Head-Up Display (HUD) ve GCS](#-askeri-standartta-head-up-display-hud-ve-gcs)
-14. [Donanım Mimarisi ve Kablolama](#-donanım-mimarisi-ve-kablolama)
-15. [Dizin Yapısı](#-dizin-yapısı)
-16. [Kurulum ve Hızlı Başlangıç](#-kurulum-ve-hızlı-başlangıç)
-17. [Uçuş Öncesi Kontrol (Pre-Flight Check)](#-uçuş-öncesi-kontrol-pre-flight-check)
-18. [Uçuş Telemetri Oynatıcısı (Log Player)](#-uçuş-telemetri-oynatıcısı-log-player)
-19. [Model Eğitimi ve ONNX / TensorRT Derleme](#-model-eğitimi-ve-onnx--tensorrt-derleme)
-20. [Birim Testleri](#-birim-testleri)
-21. [Saha İpuçları ve Sık Karşılaşılan Sorunlar (SSS)](#-saha-ipuçları-ve-sık-karşılaşılan-sorunlar-sss)
-22. [Lisans](#-lisans)
+10. [Çoklu Hipotez Takipçisi (Reid MHT)](#-çoklu-hipotez-takipçisi-reid-mht)
+11. [Derin Pekiştirmeli Öğrenme (RL) İt Dalaşı Arenası](#-derin-pekiştirmeli-öğrenme-rl-i̇t-dalaşı-arenası-dogfightgymenv)
+12. [Kokpit Sesli Uyarı Sistemi ve Prosedürel Sentezleyici](#-kokpit-sesli-uyarı-sistemi-ve-prosedürel-sentezleyici-bitchin-betty)
+13. [Otomatik Başsız (Headless) SITL Görev Koşturucu](#-otomatik-başsız-headless-sitl-görev-koşturucu)
+14. [Taktik Canlı Web GCS v3.0](#-taktik-canlı-web-gcs-v30-fastapi--websockets)
+15. [Hakem Sunucusu Entegrasyonu ve Saat Senkronizasyonu](#-hakem-sunucusu-entegrasyonu-ve-saat-senkronizasyonu)
+16. [Dahili Mock Hakem Sunucusu](#-dahili-mock-hakem-sunucusu)
+17. [Geofence ve Sınır Güvenliği](#-geofence-ve-sınır-güvenliği)
+18. [Askeri Standartta Head-Up Display (HUD) ve GCS](#-askeri-standartta-head-up-display-hud-ve-gcs)
+19. [Donanım Mimarisi ve Kablolama](#-donanım-mimarisi-ve-kablolama)
+20. [Dizin Yapısı](#-dizin-yapısı)
+21. [Kurulum ve Hızlı Başlangıç](#-kurulum-ve-hızlı-başlangıç)
+22. [Uçuş Öncesi Kontrol (Pre-Flight Check)](#-uçuş-öncesi-kontrol-pre-flight-check)
+23. [Uçuş Telemetri Oynatıcısı (Log Player)](#-uçuş-telemetri-oynatıcısı-log-player)
+24. [Model Eğitimi ve ONNX / TensorRT Derleme](#-model-eğitimi-ve-onnx--tensorrt-derleme)
+25. [Birim Testleri](#-birim-testleri)
+26. [Saha İpuçları ve Sık Karşılaşılan Sorunlar (SSS)](#-saha-ipuçları-ve-sık-karşılaşılan-sorunlar-sss)
+27. [Lisans](#-lisans)
+
 
 
 ---
@@ -597,6 +603,72 @@ python tools/export_flight_replay_3d.py
 
 ---
 
+## 🎯 Çoklu Hipotez Takipçisi (Reid MHT)
+
+`core/multi_hypothesis_tracker.py`, yoğun hava sahasında ve düşmanın fırlattığı optik yanıltıcılar (flare/decoy) veya yüksek G'li kesişim manevralarında standart tek hipotezli Kalman/ByteTrack takipçilerinin hedefi kaybetmesini önler:
+
+* **Hipotez Ağacı ve Çatallandırma:** Her tespit adımında olası veri ilişkilendirmeleri için alternatif hipotez dalları açılır.
+* **Mahalanobis İnovasyon Kapısı:** $\chi^2$ test istatistiği ($d_M^2 \le 9.488$) ile fizik dışı sahte ölçümler doğrudan elenir.
+* **Durum FSM:** `TENTATIVE` (3 tutarlı tespit) $\to$ `CONFIRMED` $\to$ `COASTING` (görüş kaybında ataletsel tahmin) $\to$ `DEAD`.
+* **N-Scan & Log-Likelihood Ratio (LLR) Budaması:** En yüksek LLR skoruna sahip en iyi $N$ hipotez muhafaza edilerek kombinatoryal patlama önlenir.
+
+---
+
+## 🎮 Derin Pekiştirmeli Öğrenme (RL) İt Dalaşı Arenası (`DogfightGymEnv`)
+
+`simulation/dogfight_gym_env.py`, OpenAI Gym / Farama Gymnasium standardında 3D hava muharebesi simülasyon ortamı sunar:
+
+* **16 Boyutlu Durum Uzayı (Observation):** Normalize menzil, kapanma hızı, ATA, Aspect Angle, bağıl irtifa, hava süratleri, Boyd özgül enerji farkı, WEZ kilitlenme durumu, G-yükü ve Geofence emniyet mesafesi.
+* **Aksiyon Uzayı:**
+  * *Ayrık (Discrete):* 7 BFM taktik manevrası (Pure, Lead, Lag, High Yo-Yo, Low Yo-Yo, Break Turn, Level Cruise).
+  * *Sürekli (Continuous):* $[u_{\text{throttle}}, u_{\text{elevator}}, u_{\text{aileron}}]$.
+* **Şartnameye Uygun Ödül Fonksiyonu:** WEZ içinde kalış ödülü ($+3.0/s$), $4.0s$ kilit tamamlandığında $+100$ büyük zafer ödülü, Geofence ihlalinde $-200$ ceza ve diskalifiye.
+* **Dahili "AceBot" Rakip Yapay Zekası:** Harici kütüphane gerektirmeden anında 1v1 öz-oyun (Self-Play) ve politika eğitimi.
+
+---
+
+## 🔊 Kokpit Sesli Uyarı Sistemi ve Prosedürel Sentezleyici ("Bitchin' Betty")
+
+`core/audio_announcer.py`, modern savaş uçaklarındaki (F-16, F-35, Kaan) Cockpit Voice Warning System (CVWS) mimarisini uygular:
+
+* **Taktik Ses Profilleri:**
+  * **LOCK_CONFIRMED:** 3 tonlu zafer fanfarı ($880\text{ Hz} \to 1760\text{ Hz}$).
+  * **LOCK_PROGRESS:** Kilitlenme süresiyle frekansı artan darbe tonu ($1400\text{ Hz}$).
+  * **PULL_UP:** Tehlikeli alçalma durumunda sert pas geç ikazı ($450/800\text{ Hz}$ kare dalga).
+  * **GEOFENCE_ALERT & RWR_THREAT:** Sınır ihlali ve arka sektör füze/kilit tehdidi savaş uyarısı ($1800\text{ Hz}$).
+* **Saf Python Prosedürel WAV Sentezleyici:** Harici ses dosyası veya C ikilisine ihtiyaç duymadan 16-bit PCM WAV baytlarını gerçek zamanlı üretir.
+
+---
+
+## ⚡ Otomatik Başsız (Headless) SITL Görev Koşturucu
+
+`simulation/sitl_runner.py`, AeroCombat aviyonik ve güdüm yığınını 100+ farklı senaryoda otomatik olarak kıyaslar:
+
+```bash
+# Toplu başsız it dalaşı testini koştur ve karne üret:
+python simulation/sitl_runner.py
+```
+
+* **Değerlendirilen Taktikler:** `ORBIT` (Devriye), `WEAVE` (Kaçınma makası), `AGGRESSIVE_BFM` (3.5G sert dönüş), `HEAD_ON` (Kafa kafaya merge).
+* **Otomatik Görev Karnesi:** TTFL (İlk kilide ulaşma süresi), WEZ tutma yüzdesi, maksimum G-yükü ve resmi TEKNOFEST puanı (`logs/sitl_reports/benchmark_summary.md`).
+
+---
+
+## 💻 Taktik Canlı Web GCS v3.0 (FastAPI + WebSockets)
+
+`gcs/tactical_web_gcs.py`, modern tarayıcılarda çalışan tam teşekküllü bir yer kontrol istasyonudur:
+
+```bash
+# Taktik Web GCS sunucusunu başlat (Port: 8080):
+python gcs/tactical_web_gcs.py
+```
+
+* **Canlı Primary Flight Display (PFD):** HTML5 Canvas üzerinde yapay ufuk, pitch merdiveni, roll rotasyonu, hız ve irtifa göstergeleri.
+* **SVG 4.0s Kilitlenme Çemberi:** Gerçek zamanlı dolan dairesel kilit halkası ve yüzde göstergesi.
+* **20 Hz WebSocket Telemetri Yayını & Otopilot Komut Arayüzü** (`ENGAGE`, `BREAK_TURN`, `RTL`, `EMERGENCY DISARM`).
+
+---
+
 ## 🛠 Donanım Mimarisi ve Kablolama
 
 | Bileşen | Önerilen Model | Bağlantı Arayüzü | Görevi |
@@ -629,6 +701,8 @@ teknofest_savasan_iha/
 │   ├── health_monitor.py           # Akıllı sistem sağlığı ve kademeli fail-safe durum makinesi
 │   ├── electronic_warfare.py       # GNSS Anti-Spoofing, RF Jamming tespiti ve Decoy filtresi
 │   ├── aerospace_ekf.py            # 15-Durumlu Havacılık EKF 6-DOF seyrüsefer ve sensör füzyonu
+│   ├── audio_announcer.py          # Cockpit Voice Warning System (CVWS) & Prosedürel WAV sentezleyici
+│   ├── multi_hypothesis_tracker.py # Reid MHT çoklu hipotez takipçisi & Mahalanobis inovasyon kapısı
 │   └── threat_library.py           # Sabit/Döner kanat kinematik tehdit veri tabanı
 ├── vision/
 │   ├── __init__.py
@@ -672,15 +746,18 @@ teknofest_savasan_iha/
 ├── gcs/
 │   ├── __init__.py
 │   ├── app.py                      # PyQt6 Yer Kontrol İstasyonu (GCS) masaüstü arayüzü
+│   ├── tactical_web_gcs.py         # Askeri standartta FastAPI & WebSockets interaktif Web GCS
 │   └── web_dashboard.py            # Mobil/Tablet uyumlu hafif canlı web gösterge paneli
 ├── simulation/
 │   ├── __init__.py
 │   ├── virtual_camera.py           # Sentetik gökyüzü ve hareketli rakip İHA video akışı
 │   ├── aerodynamics_6dof.py        # 6-DoF Non-linear ISA aerodinamik ve uçuş fiziği simülatörü
+│   ├── dogfight_gym_env.py         # OpenAI Gym uyumlu 16-D gözlem uzaylı RL it dalaşı ortamı
+│   ├── sitl_runner.py              # Otomatik başsız (headless) 100+ it dalaşı senaryo koşturucu
 │   └── dogfight_simulator.py       # 3D 1v1 Mavi/Kırmızı İHA it dalaşı simülatörü
 ├── tools/
 │   ├── __init__.py
-│   ├── preflight_check.py          # Uçuş öncesi 20 kritik bileşenin otomatik kontrolü
+│   ├── preflight_check.py          # Uçuş öncesi 30 kritik bileşenin otomatik kontrolü
 │   ├── export_flight_replay_3d.py  # Tek dosyalık 3D WebGL / Three.js it dalaşı tekrar stüdyosu
 │   ├── verify_proofs.py            # Kriptografik kilitlenme kanıt manifestosu ve kural denetleyicisi
 │   ├── flight_player.py            # Uçuş telemetri loglarını offline oynatıcı
@@ -909,7 +986,7 @@ tests/test_threat_classifier.py::test_rwr_threat_evaluation PASSED     [ 97%]
 tests/test_wind_estimator.py::test_wind_estimator_no_wind PASSED         [ 98%]
 tests/test_wind_estimator.py::test_wind_estimator_crosswind PASSED       [ 99%]
 tests/test_wind_estimator.py::test_wind_crab_compensation PASSED         [100%]
-============================== 108 passed in 2.81s ==============================
+============================== 122 passed in 6.82s ==============================
 
 ```
 
@@ -929,8 +1006,8 @@ docker-compose logs -f
 
 ### GitHub Actions CI/CD:
 Her `git push` veya `pull request` yapıldığında [`.github/workflows/ci.yml`](.github/workflows/ci.yml) iş akışı otomatik olarak tetiklenerek:
-* Python 3.10, 3.11 ve 3.12 üzerinde 108 adet birim testini,
-* `preflight_check.py` sistem doğrulamasını (20/20 kritik kontrol),
+* Python 3.10, 3.11 ve 3.12 üzerinde 122 adet birim testini,
+* `preflight_check.py` sistem doğrulamasını (30/30 kritik kontrol),
 * Sentetik veri seti üretim boru hattını çalıştırır ve kod bütünlüğünü garanti eder.
 
 ---

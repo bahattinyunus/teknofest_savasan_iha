@@ -191,3 +191,20 @@ tehdit_ve_rwr:
   kilit_tehlike_esigi_sn: 1.2         # Düşman arkamızda bu kadar sn kalırsa RWR ALARM
   kacinma_acisi_deg: 90.0             # Break turn kaçış açısı
 
+sesli_uyari:
+  aktif: true                         # Cockpit Voice Warning System (CVWS / Bitchin' Betty)
+  ses_seviyesi: 0.85
+  tekrar_araligi_sn: 2.0
+
+coklu_hipotez_takip:
+  aktif: true                         # Reid MHT (Multi-Hypothesis Tracking) Filtresi
+  onay_esigi_hit: 3
+  silme_esigi_miss: 5
+  max_hipotez_sayisi: 4
+
+web_gcs_taktik:
+  aktif: true                         # Taktik Canlı Web GCS v3.0 (FastAPI + WebSocket)
+  host: "127.0.0.1"
+  port: 8080
+
+

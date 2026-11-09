@@ -25,6 +25,8 @@ from core.blackbox import FlightBlackBox
 from core.health_monitor import HealthMonitor
 from core.electronic_warfare import ElectronicWarfareSuite
 from core.aerospace_ekf import AerospaceEKF
+from core.audio_announcer import CockpitVoiceAnnouncer, CockpitAudioEvent
+from core.multi_hypothesis_tracker import MultiHypothesisTracker
 from autopilot.neural_combat_pilot import NeuralCombatPilot
 from autopilot.cooperative_combat import CooperativeCombatGovernor
 from vision.threat_classifier import ThreatClassifierRWR, RWRStatus
@@ -77,6 +79,8 @@ class AeroCombatSystem:
         self.neural_pilot = None
         self.cooperative_governor = None
         self.threat_classifier = None
+        self.audio_announcer = None
+        self.mht_tracker = None
 
 
         self._init_subsystems()
@@ -230,6 +234,8 @@ class AeroCombatSystem:
         self.neural_pilot = NeuralCombatPilot()
         self.cooperative_governor = CooperativeCombatGovernor(own_id=takim_no, is_initial_leader=True)
         self.threat_classifier = ThreatClassifierRWR()
+        self.audio_announcer = CockpitVoiceAnnouncer(enable_sound=self.config.get("sesli_uyari", {}).get("aktif", True))
+        self.mht_tracker = MultiHypothesisTracker()
         self._frame_count = 0
 
 
@@ -238,6 +244,10 @@ class AeroCombatSystem:
         def on_lock_success(paket, kanit_yolu, **kwargs):
             logger.info(f"Olay Yakalandı: Kilit Başarılı -> Kanıt: {kanit_yolu}")
             
+            # Sesli kokpit anonsu
+            if self.audio_announcer:
+                self.audio_announcer.announce(CockpitAudioEvent.LOCK_CONFIRMED)
+
             # Kriptografik kanıt manifestosunu mühürle ve kaydet
             if self.proof_chain and self.proof_chain.is_active:
                 proof_dir = os.path.dirname(kanit_yolu) if kanit_yolu else "proofs"
@@ -251,6 +261,11 @@ class AeroCombatSystem:
             ).start()
 
         bus.subscribe(EVENT_LOCK_SUCCESS, on_lock_success)
+
+        # Kokpit Sesli Uyarı Olay Abonelikleri
+        bus.subscribe(EVENT_GEOFENCE_ALERT, lambda **kw: self.audio_announcer and self.audio_announcer.announce(CockpitAudioEvent.GEOFENCE_ALERT))
+        bus.subscribe(EVENT_EW_ALERT, lambda **kw: self.audio_announcer and self.audio_announcer.announce(CockpitAudioEvent.JAMMING))
+        bus.subscribe(EVENT_RWR_ALERT, lambda **kw: self.audio_announcer and self.audio_announcer.announce(CockpitAudioEvent.RWR_THREAT))
 
     def _start_mock_server_if_needed(self):
         """Yerel test için Mock Hakem Sunucusunu arka planda ayağa kaldırır."""
@@ -318,8 +333,11 @@ class AeroCombatSystem:
             # 1. Hedef Tespiti
             detections = self.detector.detect(frame)
 
-            # 2. Çoklu Hedef Takibi (Kalman Filter / ByteTrack)
-            tracked_boxes = self.tracker.update(detections)
+            # 2. Çoklu Hedef Takibi (Kalman Filter / ByteTrack veya Reid MHT)
+            if self.mht_tracker and self.config.get("coklu_hipotez_takip", {}).get("aktif", False):
+                tracked_boxes = self.mht_tracker.update(detections, current_time=t_now)
+            else:
+                tracked_boxes = self.tracker.update(detections)
 
             # Elektronik Harp: Optik Sahte Hedef / Flare Filtreleme
             if self.ew_suite:
@@ -336,6 +354,10 @@ class AeroCombatSystem:
                 hedefler=tracked_boxes,
                 server_offset_ms=server_offset
             )
+
+            # Kilitlenme geri sayım sesi
+            if durum == KilitDurumu.LOCKING and self.audio_announcer:
+                self.audio_announcer.announce(CockpitAudioEvent.LOCK_PROGRESS)
 
             # Kriptografik Kanıt Zinciri Yönetimi
             current_tel = self.autopilot.get_telemetry_packet(is_locked=(1 if durum == KilitDurumu.LOCKED else 0))

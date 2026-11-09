@@ -57,5 +57,6 @@ EVENT_EW_ALERT = "ew_alert"
 EVENT_ENERGY_STATE_UPDATED = "energy_state_updated"
 EVENT_RWR_ALERT = "rwr_alert"
 EVENT_TACTICAL_MANEUVER = "tactical_maneuver"
+EVENT_AUDIO_WARNING = "audio_warning"
 
 

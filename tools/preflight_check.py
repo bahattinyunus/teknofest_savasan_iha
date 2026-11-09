@@ -188,6 +188,31 @@ def run_preflight_check():
     webgl_ok = callable(generate_3d_replay_html)
     results.append(("3D WebGL Flight Studio", "Three.js Telemetri Tekrari Hazir", webgl_ok))
 
+    # 26. Coklu Hipotez Takipcisi (Reid MHT)
+    from core.multi_hypothesis_tracker import MultiHypothesisTracker
+    mht_ok = MultiHypothesisTracker() is not None
+    results.append(("Coklu Hipotez Takip (MHT)", "Chi-Square Gating & Pruning Aktif", mht_ok))
+
+    # 27. Derin Pekistirmeli Ogrenme (Gym Env)
+    from simulation.dogfight_gym_env import DogfightGymEnv
+    gym_ok = DogfightGymEnv() is not None
+    results.append(("Dogfight RL Gym Ortami", "16-D Gozlem & Self-Play Arenasi", gym_ok))
+
+    # 28. Kokpit Sesli Uyari Sentezleyici (CVWS)
+    from core.audio_announcer import CockpitVoiceAnnouncer
+    audio_ok = CockpitVoiceAnnouncer() is not None
+    results.append(("Kokpit Sesli Uyari (CVWS)", "Prosedurel Taktik WAV Sentezleyici", audio_ok))
+
+    # 29. Otomatik Basiz SITL Kiyaslayici
+    from simulation.sitl_runner import SITLBatchRunner
+    sitl_ok = SITLBatchRunner() is not None
+    results.append(("Otomatik SITL Runner", "100+ Senaryo & Scorecard Raporu", sitl_ok))
+
+    # 30. Taktik Canli Web GCS v3.0
+    from gcs.tactical_web_gcs import app as gcs_app
+    gcs_ok = gcs_app is not None
+    results.append(("Taktik Canli Web GCS v3.0", "FastAPI & WebSocket PFD Paneli", gcs_ok))
+
 
 
     # Tablo Yazdırma
