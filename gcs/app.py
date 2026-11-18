@@ -522,6 +522,7 @@ class GCSMainWindow(QMainWindow if PYQT_AVAILABLE else object):
         self._current_area_pct: float = 0.0
         self._mppi_lock_prob: float = 0.85
         self._active_tactical_mode: str = "AUTO_PURSUIT"
+        self._pending_logs: List[str] = []
 
         self._init_ui()
         self._setup_event_listeners()
@@ -793,7 +794,7 @@ class GCSMainWindow(QMainWindow if PYQT_AVAILABLE else object):
 
     def _append_log(self, msg: str):
         ts = time.strftime("%H:%M:%S")
-        self.txt_event_log.appendPlainText(f"[{ts}] {msg}")
+        self._pending_logs.append(f"[{ts}] {msg}")
 
     def _setup_event_listeners(self):
         """EventBus üzerinden arka plan olaylarını dinler."""
@@ -858,6 +859,11 @@ class GCSMainWindow(QMainWindow if PYQT_AVAILABLE else object):
 
     def _update_ui_tick(self):
         """Ana GUI iş parçacığında (Main Thread) tüm özel göstergeleri 30 Hz'de günceller."""
+        # 0. Arka plan thread'lerinden gelen logları güvenli şekilde ana thread'de yazdır
+        while self._pending_logs:
+            line = self._pending_logs.pop(0)
+            self.txt_event_log.appendPlainText(line)
+
         # 1. Kamera HUD karesi
         if self.last_frame is not None:
             rgb_frame = cv2.cvtColor(self.last_frame, cv2.COLOR_BGR2RGB)
