@@ -8,7 +8,7 @@
 [![Autopilot](https://img.shields.io/badge/Autopilot-ArduPilot%20%2F%20PX4%20(MAVLink)-1E88E5)](https://ardupilot.org/)
 [![FastAPI](https://img.shields.io/badge/Mock%20Server-FastAPI%20%2F%20Uvicorn-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![GUI](https://img.shields.io/badge/GCS%20GUI-PyQt6-41CD52?logo=qt&logoColor=white)](https://riverbankcomputing.com/software/pyqt/)
-[![Tests](https://img.shields.io/badge/Tests-135%20Passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-137%20Passed-brightgreen)](tests/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](Dockerfile)
 [![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
@@ -814,7 +814,8 @@ teknofest_savasan_iha/
 │   └── geofence.py                 # 2D Poligon sınır ihlali ve irtifa güvenlik denetleyicisi
 ├── gcs/
 │   ├── __init__.py
-│   ├── app.py                      # PyQt6 Yer Kontrol İstasyonu (GCS) masaüstü arayüzü
+│   ├── app.py                      # Native Python PyQt6 Taktik Komuta Merkezi v4.0 (QPainter PFD, 360 Radar, E-M)
+│   ├── flight_viewer_3d.py         # Saf Python PyQt6 3D İt Dalaşı ve Yörünge Stüdyosu (JavaScript/WebGL gerektirmez)
 │   ├── tactical_web_gcs.py         # Askeri standartta FastAPI & WebSockets interaktif Web GCS
 │   └── web_dashboard.py            # Mobil/Tablet uyumlu hafif canlı web gösterge paneli
 ├── simulation/

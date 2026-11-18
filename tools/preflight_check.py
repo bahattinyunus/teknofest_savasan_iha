@@ -238,6 +238,12 @@ def run_preflight_check():
     league_ok = NeuralSelfPlayLeague() is not None
     results.append(("Self-Play RL Elo Turnuva Ligi", "CEM Politika Evrimi & FIDE Elo Derecesi", league_ok))
 
+    # 36. Native Python PyQt6 Taktik Komuta Merkezi v4.0 & 3D Arena
+    from gcs.app import GCSMainWindow, PrimaryFlightDisplayWidget
+    from gcs.flight_viewer_3d import Native3DFlightCanvas
+    py_ui_ok = (GCSMainWindow is not None) and (PrimaryFlightDisplayWidget is not None) and (Native3DFlightCanvas is not None)
+    results.append(("Native Python PyQt6 GCS v4.0", "QPainter PFD, 360 Radar & 3D Arena", py_ui_ok))
+
 
 
     # Tablo Yazdırma
