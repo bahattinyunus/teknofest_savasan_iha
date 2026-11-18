@@ -24,9 +24,10 @@ class LeagueFighterProfile:
     draws: int = 0
     total_locks: int = 0
 
-    def select_action(self, obs: np.ndarray) -> np.ndarray:
-        raw = obs @ self.weights_matrix + self.bias_vector
-        return np.tanh(raw).astype(np.float32)
+    def select_action(self, obs: np.ndarray) -> int:
+        obs_clean = np.nan_to_num(obs, nan=0.0, posinf=1.0, neginf=-1.0)
+        logits = obs_clean @ self.weights_matrix + self.bias_vector
+        return int(np.argmax(logits))
 
 
 class NeuralSelfPlayLeague:
@@ -56,13 +57,14 @@ class NeuralSelfPlayLeague:
             ("GOKTURK_INTERCEPTOR", 1.10, 1.10),
         ]
         for idx, (name, gain_ang, gain_spd) in enumerate(archetypes):
-            w = self.rng.normal(0.0, 0.18, size=(16, 4)).astype(np.float32)
-            # Gözlem uzayı indeksleri: 3=dy(east), 4=dz(down), 6=ata, 7=aa, 9=lock_progress
-            w[3, 0] = 1.4 * gain_ang     # Yatay sapmaya göre yatış (roll)
-            w[4, 1] = -1.2 * gain_ang    # İrtifa farkına göre dikilme (pitch)
-            w[6, 0] = -0.9 * gain_ang    # ATA düzeltmesi
-            w[2, 2] = 0.8 * gain_spd     # Menzile göre gaz (throttle)
-            b = np.array([0.0, 0.05, 0.45, -0.5], dtype=np.float32)
+            w = self.rng.normal(0.0, 0.18, size=(16, 7)).astype(np.float32)
+            # 0: PURE_PURSUIT, 1: LEAD_PURSUIT, 2: LAG_PURSUIT, 3: HIGH_YOYO, 4: LOW_YOYO, 5: DEFENSIVE_BREAK, 6: LEVEL_CRUISE
+            w[2, 1] = 1.4 * gain_ang     # ATA yüksekse Lead Pursuit
+            w[0, 4] = 1.2 * gain_spd     # Mesafe uzaksa Low Yo-Yo / hızlanma
+            w[1, 3] = 1.1 * gain_ang     # Yaklaşma hızı çok yüksekse High Yo-Yo
+            w[8, 0] = 1.8 * gain_ang     # WEZ içindeyse Pure Pursuit ile kilidi koru
+            w[15, 5] = 2.0               # RWR tehdidi varsa Defensive Break
+            b = np.array([0.4, 0.35, 0.2, 0.1, 0.15, -0.2, 0.25], dtype=np.float32)
             self.fighters.append(
                 LeagueFighterProfile(
                     name=name,
@@ -92,8 +94,8 @@ class NeuralSelfPlayLeague:
             act_a = fighter_a.select_action(obs_a)
             obs_a, r, term, trunc, info = env_a.step(act_a)
             reward_a += float(r)
-            if info.get("lock_completed", False):
-                locks_a += 1
+            if info.get("successful_locks", 0) > locks_a:
+                locks_a = int(info["successful_locks"])
             if term or trunc:
                 break
 
@@ -106,8 +108,8 @@ class NeuralSelfPlayLeague:
             act_b = fighter_b.select_action(obs_b)
             obs_b, r, term, trunc, info = env_b.step(act_b)
             reward_b += float(r)
-            if info.get("lock_completed", False):
-                locks_b += 1
+            if info.get("successful_locks", 0) > locks_b:
+                locks_b = int(info["successful_locks"])
             if term or trunc:
                 break
 

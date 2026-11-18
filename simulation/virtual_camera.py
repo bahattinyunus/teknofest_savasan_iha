@@ -35,8 +35,8 @@ class VirtualCameraFeed:
 
         # 2. Sentetik Rakip İHA Konumu ve Hareketi
         # Uçak ekran merkezinde manevra yapar
-        cx = (self.width / 2.0) + (self.width * 0.12) * math.sin(t * 0.7)
-        cy = (self.height / 2.0) + (self.height * 0.08) * math.cos(t * 0.9)
+        cx = (self.width / 2.0) + 75.0 * math.sin(t * 0.8)
+        cy = (self.height / 2.0) + 45.0 * math.cos(t * 0.6)
         
         # %5 kuralını sağlayacak boyutta (Genişlik ~ 240px, Yükseklik ~ 180px)
         scale = 1.0 + 0.15 * math.sin(t * 0.4)

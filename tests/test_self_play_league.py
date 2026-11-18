@@ -18,4 +18,4 @@ def test_self_play_league_tournament_and_export(tmp_path):
     assert len(result["leaderboard"]) == 4
     assert result["total_matches"] == 12  # 4 takımlı ligde nesil başına 6 maç * 2 nesil
     assert len(result["champion_weights"]) == 16
-    assert len(result["champion_bias"]) == 4
+    assert len(result["champion_bias"]) == 7

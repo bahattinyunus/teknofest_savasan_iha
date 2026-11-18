@@ -251,9 +251,17 @@ class Aerodynamics6DoF:
 
         self.state = self._apply_derivative(self.state, combined_deriv, dt)
 
+        # Sayısal kararlılık ve uçuş zarfı hız/açısal hız sınırları
+        self.state.u = float(np.clip(self.state.u, 5.0, 55.0))
+        self.state.v = float(np.clip(self.state.v, -20.0, 20.0))
+        self.state.w = float(np.clip(self.state.w, -20.0, 20.0))
+        self.state.p = float(np.clip(self.state.p, -4.0, 4.0))
+        self.state.q = float(np.clip(self.state.q, -3.0, 3.0))
+        self.state.r = float(np.clip(self.state.r, -3.0, 3.0))
+
         # Euler açılarını normalize et (-pi..pi)
         self.state.phi = (self.state.phi + math.pi) % (2 * math.pi) - math.pi
-        self.state.theta = np.clip(self.state.theta, -math.pi / 2.0 + 0.01, math.pi / 2.0 - 0.01)
+        self.state.theta = float(np.clip(self.state.theta, -math.pi / 2.2, math.pi / 2.2))
         self.state.psi = (self.state.psi + math.pi) % (2 * math.pi) - math.pi
 
         return self.state
@@ -332,15 +340,15 @@ class Aerodynamics6DoF:
                  ixz * (ixx - iyy + izz) * s.q * s.r) / gamma
 
         # Euler açı türevleri (phi_dot, theta_dot, psi_dot)
+        c_theta = max(0.08, abs(math.cos(s.theta)))
         s_theta = math.sin(s.theta)
-        c_theta = math.cos(s.theta)
-        t_theta = math.tan(s.theta)
+        t_theta = s_theta / c_theta
         s_phi = math.sin(s.phi)
         c_phi = math.cos(s.phi)
 
         phi_dot = s.p + (s.q * s_phi + s.r * c_phi) * t_theta
         theta_dot = s.q * c_phi - s.r * s_phi
-        psi_dot = (s.q * s_phi + s.r * c_phi) / max(0.001, c_theta)
+        psi_dot = (s.q * s_phi + s.r * c_phi) / c_theta
 
         # Seyrüsefer Kinematikleri (NED hızları: pos_n_dot, pos_e_dot, pos_d_dot)
         c_psi = math.cos(s.psi)

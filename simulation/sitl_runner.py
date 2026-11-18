@@ -13,11 +13,14 @@ davranışlarına (ORBIT, WEAVE, AGGRESSIVE_BFM, HEAD_ON) karşı toplu (batch) 
 """
 
 import os
+import sys
 import json
 import time
 import math
 from dataclasses import dataclass, asdict
 from typing import List, Dict, Any, Optional
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from simulation.dogfight_simulator import DogfightSimulator, TargetBehavior
 from autopilot.neural_combat_pilot import NeuralCombatPilot

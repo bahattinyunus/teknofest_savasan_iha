@@ -230,7 +230,8 @@ class AeroCombatSystem:
         )
 
         # 10. Gelişmiş Aviyonik, Savunma ve Seyrüsefer Modülleri
-        self.blackbox = FlightBlackBox(log_dir=gen_cfg.get("kara_kutu_dizini", "logs/blackbox"))
+        self.blackbox = FlightBlackBox(base_log_dir=gen_cfg.get("kara_kutu_dizini", "logs/blackbox"))
+        self.blackbox.start()
         self.health_monitor = HealthMonitor()
         self.energy_manager = EnergyManeuverabilityGovernor()
         self.ew_suite = ElectronicWarfareSuite()

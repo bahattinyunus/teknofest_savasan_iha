@@ -102,9 +102,9 @@ class MockDetector(BaseDetector):
         box_w = 260.0 + 20.0 * math.sin(t * 0.5)
         box_h = 190.0 + 15.0 * math.cos(t * 0.5)
         
-        # Merkez etrafında hafif salınım
-        center_x = (w / 2.0) + 120.0 * math.sin(t * 0.8)
-        center_y = (h / 2.0) + 70.0 * math.cos(t * 0.6)
+        # Merkez etrafında hafif salınım (1280x720 merkez tolerans yarıçapı R=126px içinde)
+        center_x = (w / 2.0) + 75.0 * math.sin(t * 0.8)
+        center_y = (h / 2.0) + 45.0 * math.cos(t * 0.6)
         
         x1 = max(0.0, center_x - box_w / 2.0)
         y1 = max(0.0, center_y - box_h / 2.0)

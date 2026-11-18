@@ -24,8 +24,8 @@ class FlightBlackBox:
     ve hakem iletişimini döngüsel ve kaza anında dahi kurtarılabilir şekilde kaydeder.
     """
 
-    def __init__(self, base_log_dir: str = "logs"):
-        self.base_log_dir = base_log_dir
+    def __init__(self, base_log_dir: str = "logs", log_dir: Optional[str] = None):
+        self.base_log_dir = log_dir if log_dir is not None else base_log_dir
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.session_dir = os.path.join(self.base_log_dir, f"session_{timestamp}")
         os.makedirs(self.session_dir, exist_ok=True)
@@ -95,6 +95,14 @@ class FlightBlackBox:
             self._queue.put_nowait(("CSV", line))
         except queue.Full:
             pass
+
+    def record_telemetry(self, tel: TelemetriPaketi):
+        """log_telemetry için geriye dönük uyumlu takma ad."""
+        self.log_telemetry(tel)
+
+    def close(self):
+        """stop için geriye dönük uyumlu takma ad."""
+        self.stop()
 
     def log_event(self, event_name: str, payload: Dict[str, Any]):
         """Kritik uçuş olayını JSONL dosyasına kaydeder."""
