@@ -24,6 +24,10 @@ from .collision_avoidance import (
 from .gnss_denied_nav import GNSSDeniedNavigator, GNSSStatus, GNSSSample
 from .mission_planner import TacticalMissionPlanner, SearchPattern, Waypoint
 from .energy_manager import EnergyManeuverabilityGovernor
+from .neural_combat_pilot import NeuralCombatPilot
+from .cooperative_combat import CooperativeCombatGovernor
+from .mppi_guidance import MPPILockGuidanceController, MPPIControlCommand
+from .mesh_datalink import TacticalMeshDatalink, MeshPacket, TriangulatedTarget3D, SwarmAllocationResult
 
 __all__ = [
     "MavlinkBridge",
@@ -53,5 +57,13 @@ __all__ = [
     "TacticalMissionPlanner",
     "SearchPattern",
     "Waypoint",
-    "EnergyManeuverabilityGovernor"
+    "EnergyManeuverabilityGovernor",
+    "NeuralCombatPilot",
+    "CooperativeCombatGovernor",
+    "MPPILockGuidanceController",
+    "MPPIControlCommand",
+    "TacticalMeshDatalink",
+    "MeshPacket",
+    "TriangulatedTarget3D",
+    "SwarmAllocationResult"
 ]

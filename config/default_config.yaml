@@ -207,4 +207,30 @@ web_gcs_taktik:
   host: "127.0.0.1"
   port: 8080
 
+imm_coklu_model_filtre:
+  aktif: true                         # Etkileşimli Çoklu Model (IMM) 3D Manevra Takipçisi (CV + CT-L + CT-R + CA)
+  donus_hizi_deg_s: 28.0
+  olcum_gurultusu_m: 2.0
+  tahmin_ufku_sn: 1.5
+
+mppi_optimal_gudum:
+  aktif: true                         # Model Predictive Path Integral (MPPI) 4-Saniye Kilit Güdümcüsü
+  rollout_sayisi: 48
+  ufuk_adimi: 15
+  dt_sn: 0.2
+  optimal_menzil_m: 36.0
+  min_guvenli_irtifa_m: 32.0
+
+taktik_mesh_ag:
+  aktif: true                         # Sürü İHA'lar Arası Taktik Mesh Veri Bağı, 3D Pasif Nirengi ve CBBA
+  maks_haberlesme_menzili_m: 1500.0
+  paket_kayip_orani: 0.02
+
+optik_akis_reid:
+  aktif: true                         # Lucas-Kanade Optik Akış + HSV Histogram Re-ID Kararma/Occlusion Kurtarıcı
+  maks_surukleme_karesi: 8
+  benzerlik_esigi: 0.55
+  maks_arama_mesafesi_px: 220.0
+
+
 

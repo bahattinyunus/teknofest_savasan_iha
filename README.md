@@ -8,7 +8,7 @@
 [![Autopilot](https://img.shields.io/badge/Autopilot-ArduPilot%20%2F%20PX4%20(MAVLink)-1E88E5)](https://ardupilot.org/)
 [![FastAPI](https://img.shields.io/badge/Mock%20Server-FastAPI%20%2F%20Uvicorn-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![GUI](https://img.shields.io/badge/GCS%20GUI-PyQt6-41CD52?logo=qt&logoColor=white)](https://riverbankcomputing.com/software/pyqt/)
-[![Tests](https://img.shields.io/badge/Tests-122%20Passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-135%20Passed-brightgreen)](tests/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](Dockerfile)
 [![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
@@ -38,19 +38,24 @@
 12. [Kokpit Sesli Uyarı Sistemi ve Prosedürel Sentezleyici](#-kokpit-sesli-uyarı-sistemi-ve-prosedürel-sentezleyici-bitchin-betty)
 13. [Otomatik Başsız (Headless) SITL Görev Koşturucu](#-otomatik-başsız-headless-sitl-görev-koşturucu)
 14. [Taktik Canlı Web GCS v3.0](#-taktik-canlı-web-gcs-v30-fastapi--websockets)
-15. [Hakem Sunucusu Entegrasyonu ve Saat Senkronizasyonu](#-hakem-sunucusu-entegrasyonu-ve-saat-senkronizasyonu)
-16. [Dahili Mock Hakem Sunucusu](#-dahili-mock-hakem-sunucusu)
-17. [Geofence ve Sınır Güvenliği](#-geofence-ve-sınır-güvenliği)
-18. [Askeri Standartta Head-Up Display (HUD) ve GCS](#-askeri-standartta-head-up-display-hud-ve-gcs)
-19. [Donanım Mimarisi ve Kablolama](#-donanım-mimarisi-ve-kablolama)
-20. [Dizin Yapısı](#-dizin-yapısı)
-21. [Kurulum ve Hızlı Başlangıç](#-kurulum-ve-hızlı-başlangıç)
-22. [Uçuş Öncesi Kontrol (Pre-Flight Check)](#-uçuş-öncesi-kontrol-pre-flight-check)
-23. [Uçuş Telemetri Oynatıcısı (Log Player)](#-uçuş-telemetri-oynatıcısı-log-player)
-24. [Model Eğitimi ve ONNX / TensorRT Derleme](#-model-eğitimi-ve-onnx--tensorrt-derleme)
-25. [Birim Testleri](#-birim-testleri)
-26. [Saha İpuçları ve Sık Karşılaşılan Sorunlar (SSS)](#-saha-ipuçları-ve-sık-karşılaşılan-sorunlar-sss)
-27. [Lisans](#-lisans)
+15. [Etkileşimli Çoklu Model (IMM) 3D Manevra Takipçisi](#-etkileşimli-çoklu-model-imm-3d-manevra-takipçisi)
+16. [MPPI 4-Saniye Kilit Odaklı Stokastik Optimal Güdüm](#-mppi-4-saniye-kilit-odaklı-stokastik-optimal-güdüm)
+17. [Taktik Sürü Mesh Veri Bağı, 3D Pasif Nirengi ve CBBA](#-taktik-sürü-mesh-veri-bağı-3d-pasif-nirengi-ve-cbba)
+18. [Lucas-Kanade Optik Akış ve HSV Re-ID Kararma Kurtarıcı](#-lucas-kanade-optik-akış-ve-hsv-re-id-kararma-kurtarıcı)
+19. [Nöral Self-Play RL Turnuva ve Elo Ligi](#-nöral-self-play-rl-turnuva-ve-elo-ligi)
+20. [Hakem Sunucusu Entegrasyonu ve Saat Senkronizasyonu](#-hakem-sunucusu-entegrasyonu-ve-saat-senkronizasyonu)
+21. [Dahili Mock Hakem Sunucusu](#-dahili-mock-hakem-sunucusu)
+22. [Geofence ve Sınır Güvenliği](#-geofence-ve-sınır-güvenliği)
+23. [Askeri Standartta Head-Up Display (HUD) ve GCS](#-askeri-standartta-head-up-display-hud-ve-gcs)
+24. [Donanım Mimarisi ve Kablolama](#-donanım-mimarisi-ve-kablolama)
+25. [Dizin Yapısı](#-dizin-yapısı)
+26. [Kurulum ve Hızlı Başlangıç](#-kurulum-ve-hızlı-başlangıç)
+27. [Uçuş Öncesi Kontrol (Pre-Flight Check)](#-uçuş-öncesi-kontrol-pre-flight-check)
+28. [Uçuş Telemetri Oynatıcısı (Log Player)](#-uçuş-telemetri-oynatıcısı-log-player)
+29. [Model Eğitimi ve ONNX / TensorRT Derleme](#-model-eğitimi-ve-onnx--tensorrt-derleme)
+30. [Birim Testleri](#-birim-testleri)
+31. [Saha İpuçları ve Sık Karşılaşılan Sorunlar (SSS)](#-saha-ipuçları-ve-sık-karşılaşılan-sorunlar-sss)
+32. [Lisans](#-lisans)
 
 
 
@@ -669,6 +674,66 @@ python gcs/tactical_web_gcs.py
 
 ---
 
+## 🧭 Etkileşimli Çoklu Model (IMM) 3D Manevra Takipçisi
+
+`core/imm_filter.py`, tekil bir sabit hızlı Kalman filtresinin sert it dalaşı (Break Turn / Scissors) dönüşlerinde yaşadığı faz gecikmesini ortadan kaldırmak üzere **4 paralel kinematik modeli** Markov geçiş olasılık matrisi ($\Pi$) üzerinden kaynaştırır:
+
+1. **Constant Velocity (`CV`):** Doğrusal sabit hızlı düz uçuş modeli.
+2. **Coordinated Turn Left (`CT_LEFT`):** $-\omega$ açısal hızıyla sola koordineli yatışlı dönüş modeli.
+3. **Coordinated Turn Right (`CT_RIGHT`):** $+\omega$ açısal hızıyla sağa koordineli yatışlı dönüş modeli.
+4. **Constant Acceleration (`CA`):** Ani tırmanış, dalış ve kaçış ivmelenme modeli.
+
+Her ölçüm adımında:
+$$\mu_j(k) = \frac{1}{c} \Lambda_j(k) \sum_{i=1}^{4} \pi_{ij} \mu_i(k-1), \quad \hat{\mathbf{x}}(k) = \sum_{j=1}^{4} \mu_j(k) \hat{\mathbf{x}}_j(k)$$
+formülüyle model olasılıkları güncellenir, hedefin anlık dönüş hızı ($\dot{\psi}$), çektiği G-yükü ve $T=1.5\text{ sn}$ sonraki 3D önleme konumu yüksek doğrulukla kestirilir.
+
+---
+
+## 🎯 MPPI 4-Saniye Kilit Odaklı Stokastik Optimal Güdüm
+
+`autopilot/mppi_guidance.py`, klasik PID veya saf PN güdümünün ötesine geçerek **Model Predictive Path Integral (MPPI)** stokastik optimal kontrol teorisini uygular:
+
+* Her kontrol döngüsünde $N = 48$ adet ileri kontrol yörüngesini ($\phi_{\text{cmd}}, \theta_{\text{cmd}}, V_{\text{cmd}}$) $H = 15$ zaman adımı ($3.0\text{ sn}$ ufuk) boyunca paralel vektörize olarak simüle eder.
+* **Çok Amaçlı Maliyet Fonksiyonu ($J$):**
+  * **Boresight (ATA) Merkezleme:** Hedefi kamera nişangah merkezinde tutma,
+  * **%5 Ekran Alanı Tatlı Noktası (WEZ Menzili):** Hedefle $36\text{m}$ optimal kilit mesafesini koruma ve $14\text{m}$ altı çarpışma önleme bariyeri,
+  * **Hard-Deck İrtifa Tabanı:** Asgari güvenli irtifanın ($32\text{m}$) altına inmeyi ağır cezalandıran irtifa koruma terimi.
+* Yörüngeler Boltzmann ağırlıklarıyla ($w_n \propto \exp(-S_n / \lambda)$) birleştirilerek 4.0 saniyelik kesintisiz kilidi maksimize eden optimal uçuş komutu üretilir.
+
+---
+
+## 🕸 Taktik Sürü Mesh Veri Bağı, 3D Pasif Nirengi ve CBBA
+
+`autopilot/mesh_datalink.py`, dost sürü İHA'lar arasında dağıtık ağ merkezli muharebe (Network-Centric Warfare) yeteneği sağlar:
+
+1. **Pasif 3D Optik Nirengi (Least-Squares Line Intersection):** İki veya daha fazla dost İHA'nın 2D kamera doğrultu birim vektörlerini ($\mathbf{d}_i$) birleştirerek aktif radar yayını yapmadan (EMCON) hedefin 3D NED konumunu çözer:
+   $$\left[ \sum_{i=1}^{M} (\mathbf{I} - \mathbf{d}_i \mathbf{d}_i^T) \right] \mathbf{X}_{\text{target}} = \sum_{i=1}^{M} (\mathbf{I} - \mathbf{d}_i \mathbf{d}_i^T) \mathbf{P}_i$$
+2. **CBBA (Consensus-Based Bundle Algorithm) Hedef Tahsisi:** Çoklu dost İHA'nın aynı hedefe çakışarak gitmesini önleyen, mesafe + boresight açısı + tehdit önceliği tabanlı dağıtık açık artırma algoritması.
+
+---
+
+## 👁 Lucas-Kanade Optik Akış ve HSV Re-ID Kararma Kurtarıcı
+
+`vision/optical_flow_tracker.py`, bulut/güneş parlaması veya yüksek hızlı hareket bulanıklığı nedeniyle YOLO tespitinin anlık olarak düştüğü karelerde **4.0 saniyelik kilit sayacını korur**:
+
+* **Lucas-Kanade Optik Akış Sürüklemesi (Optical Flow Coasting):** Dedektör çıktısı boş kaldığında, son bilinen hedef yaması üzerindeki uzamsal-zamansal parlaklık gradyanlarını ($I_x, I_y, I_t$) ve hız belleğini kullanarak hedef kutusunu 8 kareye kadar yüksek isabetle sürükler.
+* **Luma-Chroma Görünüm Re-Identification (Re-ID):** Hedef yeniden tespit edildiğinde 32-bin normalize görünüm vektörü kosinüs benzerliğiyle eski `track_id`'yi geri yükler; ID değişimi yüzünden sayacın sıfırlanmasını engeller.
+
+---
+
+## 🏆 Nöral Self-Play RL Turnuva ve Elo Ligi
+
+`tools/train_self_play_league.py`, `DogfightGymEnv` 16-boyutlu RL it dalaşı arenasında farklı taktik arketiplere (`ACE_VORTEX_ALPHA`, `BOYD_ENERGY_HAWK`, `MPPI_SHADOW_HUNTER`, `GOKTURK_INTERCEPTOR`) sahip nöral pilotları karşılaştırır:
+
+```bash
+python tools/train_self_play_league.py --generations 3 --steps 200 --output logs/neural_champion_weights.json
+```
+
+* Round-Robin turnuva maçları sonunda pilotların dereceleri **FIDE Elo formülüyle ($K=32$)** güncellenir,
+* En yüksek Elo puanlı şampiyonun politika ağırlıkları evrimsel mutasyonla bir sonraki nesle aktarılır ve `logs/neural_champion_weights.json` olarak kaydedilir.
+
+---
+
 ## 🛠 Donanım Mimarisi ve Kablolama
 
 | Bileşen | Önerilen Model | Bağlantı Arayüzü | Görevi |
@@ -701,6 +766,7 @@ teknofest_savasan_iha/
 │   ├── health_monitor.py           # Akıllı sistem sağlığı ve kademeli fail-safe durum makinesi
 │   ├── electronic_warfare.py       # GNSS Anti-Spoofing, RF Jamming tespiti ve Decoy filtresi
 │   ├── aerospace_ekf.py            # 15-Durumlu Havacılık EKF 6-DOF seyrüsefer ve sensör füzyonu
+│   ├── imm_filter.py               # Etkileşimli Çoklu Model (IMM) 3D Manevra Takipçisi (CV/CT/CA)
 │   ├── audio_announcer.py          # Cockpit Voice Warning System (CVWS) & Prosedürel WAV sentezleyici
 │   ├── multi_hypothesis_tracker.py # Reid MHT çoklu hipotez takipçisi & Mahalanobis inovasyon kapısı
 │   └── threat_library.py           # Sabit/Döner kanat kinematik tehdit veri tabanı
@@ -708,6 +774,7 @@ teknofest_savasan_iha/
 │   ├── __init__.py
 │   ├── detector.py                 # YOLOv8/v11 & ONNX dedektör (ve sanal hedef üretici)
 │   ├── tracker.py                  # Kalman Filtresi ve IoU tabanlı çoklu hedef takipçisi
+│   ├── optical_flow_tracker.py     # Lucas-Kanade Optik Akış + HSV Re-ID Kararma (Occlusion) Kurtarıcı
 │   ├── lock_engine.py              # 4.0 sn kesintisiz sayaç, %5 kuralı ve MP4 kanıt üreticisi
 │   ├── threat_classifier.py        # Tehdit sınıflandırıcı ve RWR arka sektör erken uyarısı
 │   ├── latency_compensator.py      # Gecikme telafisi için Delayed Kalman Filter (DKF)
@@ -732,6 +799,8 @@ teknofest_savasan_iha/
 │   ├── __init__.py
 │   ├── mavlink_bridge.py           # Pixhawk/SITL PyMAVLink haberleşmesi
 │   ├── guidance.py                 # PN, Pure Pursuit ve Coordinated Turn uçuş zarfı güdümü
+│   ├── mppi_guidance.py            # MPPI 4-Saniye Kilit Odaklı Stokastik Optimal Güdüm Kontrolcüsü
+│   ├── mesh_datalink.py            # Sürü Taktik Mesh Veri Bağı, 3D Pasif Nirengi ve CBBA Tahsisi
 │   ├── neural_combat_pilot.py      # DARPA ACE nöral çok boyutlu it dalaşı manevra politikası
 │   ├── cooperative_combat.py       # Lider-Kanat / CCA işbirlikçi it dalaşı ve tuzak/pusu doktrini
 │   ├── bfm_maneuvers.py            # Break Turn, Scissors, High Yo-Yo it dalaşı manevraları
@@ -757,7 +826,8 @@ teknofest_savasan_iha/
 │   └── dogfight_simulator.py       # 3D 1v1 Mavi/Kırmızı İHA it dalaşı simülatörü
 ├── tools/
 │   ├── __init__.py
-│   ├── preflight_check.py          # Uçuş öncesi 30 kritik bileşenin otomatik kontrolü
+│   ├── preflight_check.py          # Uçuş öncesi 35 kritik bileşenin otomatik kontrolü
+│   ├── train_self_play_league.py   # Nöral Self-Play RL Turnuva ve FIDE Elo Derecelendirme Ligi
 │   ├── export_flight_replay_3d.py  # Tek dosyalık 3D WebGL / Three.js it dalaşı tekrar stüdyosu
 │   ├── verify_proofs.py            # Kriptografik kilitlenme kanıt manifestosu ve kural denetleyicisi
 │   ├── flight_player.py            # Uçuş telemetri loglarını offline oynatıcı

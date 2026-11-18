@@ -27,9 +27,13 @@ from core.electronic_warfare import ElectronicWarfareSuite
 from core.aerospace_ekf import AerospaceEKF
 from core.audio_announcer import CockpitVoiceAnnouncer, CockpitAudioEvent
 from core.multi_hypothesis_tracker import MultiHypothesisTracker
+from core.imm_filter import InteractingMultipleModelFilter
 from autopilot.neural_combat_pilot import NeuralCombatPilot
 from autopilot.cooperative_combat import CooperativeCombatGovernor
+from autopilot.mppi_guidance import MPPILockGuidanceController
+from autopilot.mesh_datalink import TacticalMeshDatalink
 from vision.threat_classifier import ThreatClassifierRWR, RWRStatus
+from vision.optical_flow_tracker import OpticalFlowReIDTracker
 
 from vision.detector import YoloDetector, MockDetector
 from vision.tracker import KalmanTracker
@@ -81,6 +85,10 @@ class AeroCombatSystem:
         self.threat_classifier = None
         self.audio_announcer = None
         self.mht_tracker = None
+        self.imm_filter = None
+        self.mppi_guidance = None
+        self.mesh_datalink = None
+        self.optical_flow_reid = None
 
 
         self._init_subsystems()
@@ -236,6 +244,10 @@ class AeroCombatSystem:
         self.threat_classifier = ThreatClassifierRWR()
         self.audio_announcer = CockpitVoiceAnnouncer(enable_sound=self.config.get("sesli_uyari", {}).get("aktif", True))
         self.mht_tracker = MultiHypothesisTracker()
+        self.imm_filter = InteractingMultipleModelFilter()
+        self.mppi_guidance = MPPILockGuidanceController()
+        self.mesh_datalink = TacticalMeshDatalink(own_uav_id=takim_no)
+        self.optical_flow_reid = OpticalFlowReIDTracker()
         self._frame_count = 0
 
 
@@ -339,6 +351,15 @@ class AeroCombatSystem:
             else:
                 tracked_boxes = self.tracker.update(detections)
 
+            # 2.b Optik Akış ve HSV Re-ID ile Anlık Kararma (Occlusion) Kurtarma
+            if self.optical_flow_reid and self.config.get("optik_akis_reid", {}).get("aktif", True):
+                tracked_boxes = self.optical_flow_reid.update_and_recover(
+                    frame=frame,
+                    tracked_boxes=tracked_boxes,
+                    dt=dt,
+                    current_time=t_now
+                )
+
             # Elektronik Harp: Optik Sahte Hedef / Flare Filtreleme
             if self.ew_suite:
                 tracked_boxes = self.ew_suite.filter_visual_decoys(
@@ -408,6 +429,20 @@ class AeroCombatSystem:
                     target_vel_ned=(current_tel.IHA_hiz * 0.9, 0.0, 0.0)
                 )
                 bus.emit(EVENT_TACTICAL_MANEUVER, command=maneuver_cmd)
+
+            # IMM 3D Manevra Kestirimi ve MPPI 4-Saniye Kilit Güdümü
+            if self.imm_filter and self.mppi_guidance and aktif_hedef:
+                imm_est = self.imm_filter.step(
+                    measured_pos_ned_m=(32.0, 4.0, -current_tel.IHA_irtifa),
+                    dt=dt
+                )
+                _ = self.mppi_guidance.compute_optimal_command(
+                    own_pos_ned=(0.0, 0.0, -current_tel.IHA_irtifa),
+                    own_vel_ned=(current_tel.IHA_hiz, 0.0, 0.0),
+                    target_pos_ned=imm_est.pos_ned_m,
+                    target_vel_ned=imm_est.vel_ned_mps,
+                    target_acc_ned=imm_est.acc_ned_mps2
+                )
 
             # 4. HUD Çizimi
             hud_frame = self.visualizer.draw_hud(

@@ -213,6 +213,31 @@ def run_preflight_check():
     gcs_ok = gcs_app is not None
     results.append(("Taktik Canli Web GCS v3.0", "FastAPI & WebSocket PFD Paneli", gcs_ok))
 
+    # 31. Etkilesimli Coklu Model (IMM) 3D Manevra Filtresi
+    from core.imm_filter import InteractingMultipleModelFilter
+    imm_ok = InteractingMultipleModelFilter() is not None
+    results.append(("IMM 3D Manevra Filtresi", "CV + CT-Left/Right + CA Markov Fuzyonu", imm_ok))
+
+    # 32. MPPI 4-Saniye Kilit Odakli Optimal Gudum
+    from autopilot.mppi_guidance import MPPILockGuidanceController
+    mppi_ok = MPPILockGuidanceController() is not None
+    results.append(("MPPI Stokastik Optimal Gudum", "48 Rollout WEZ & Boresight Optimizasyonu", mppi_ok))
+
+    # 33. Taktik Suru Mesh Veri Bagi & 3D Pasif Nirengi
+    from autopilot.mesh_datalink import TacticalMeshDatalink
+    mesh_ok = TacticalMeshDatalink() is not None
+    results.append(("Taktik Mesh & 3D Nirengi", "CBBA Acik Artirma & Pasif LOS Kesisimi", mesh_ok))
+
+    # 34. Lucas-Kanade Optik Akis & HSV Re-ID Kurtarici
+    from vision.optical_flow_tracker import OpticalFlowReIDTracker
+    flow_ok = OpticalFlowReIDTracker() is not None
+    results.append(("Optik Akis & Re-ID Kurtarici", "Kararma (Occlusion) Kilit Koruyucu", flow_ok))
+
+    # 35. Noral Self-Play RL Turnuva ve Elo Ligi
+    from tools.train_self_play_league import NeuralSelfPlayLeague
+    league_ok = NeuralSelfPlayLeague() is not None
+    results.append(("Self-Play RL Elo Turnuva Ligi", "CEM Politika Evrimi & FIDE Elo Derecesi", league_ok))
+
 
 
     # Tablo Yazdırma

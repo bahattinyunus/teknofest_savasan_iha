@@ -12,6 +12,8 @@ from .tactical_radar import TacticalRadarMinimap
 from .gimbal_controller import GimbalController
 from .optical_ranging import OpticalRanger, OpticalRangingResult
 from .multi_camera_fusion import MultiCameraFusion, CameraRole, FusedTarget
+from .threat_classifier import ThreatClassifierRWR, RWRStatus
+from .optical_flow_tracker import OpticalFlowReIDTracker, OpticalTrackMemory
 
 __all__ = [
     "YoloDetector",
@@ -28,5 +30,9 @@ __all__ = [
     "OpticalRangingResult",
     "MultiCameraFusion",
     "CameraRole",
-    "FusedTarget"
+    "FusedTarget",
+    "ThreatClassifierRWR",
+    "RWRStatus",
+    "OpticalFlowReIDTracker",
+    "OpticalTrackMemory"
 ]
