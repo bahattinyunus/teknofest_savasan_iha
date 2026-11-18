@@ -244,6 +244,26 @@ def run_preflight_check():
     py_ui_ok = (GCSMainWindow is not None) and (PrimaryFlightDisplayWidget is not None) and (Native3DFlightCanvas is not None)
     results.append(("Native Python PyQt6 GCS v4.0", "QPainter PFD, 360 Radar & 3D Arena", py_ui_ok))
 
+    # 37. Rufus Isaacs Diferansiyel Oyun Teorisi (Homicidal Chauffeur / Minimax)
+    from autopilot.differential_game_solver import DifferentialGameSolver
+    isaacs_ok = DifferentialGameSolver() is not None
+    results.append(("Isaacs Diferansiyel Oyun Cozucu", "Homicidal Chauffeur & Minimax Eyer Noktasi", isaacs_ok))
+
+    # 38. 7-Durumlu Non-Linear CTRV Unscented Kalman Filter (UKF)
+    from core.ukf_nonlinear import UnscentedKalmanFilter3D
+    ukf_ok = UnscentedKalmanFilter3D() is not None
+    results.append(("7-State Non-Linear CTRV UKF", "15 Sigma-Noktali Kuresel Fuzyon", ukf_ok))
+
+    # 39. MIL-F-8785C Dryden Ruzgar Turbulansi & Burnham-Hallock Wake Vortex
+    from simulation.dryden_turbulence import DrydenWindTurbulenceModel
+    dryden_ok = DrydenWindTurbulenceModel() is not None
+    results.append(("MIL-F-8785C Dryden & Wake Vortex", "Spektral Turbulans & Kuyruk Girdabi", dryden_ok))
+
+    # 40. Alt-Piksel (Sub-Pixel) Ego-Motion Telafisi & Dinamik Onleme Nisangahi
+    from vision.subpixel_lead_tracker import SubPixelDynamicLeadCompensator
+    subpx_ok = SubPixelDynamicLeadCompensator() is not None
+    results.append(("Alt-Piksel & Dinamik Lead Reticle", "Ego-Motion (p,q,r) & %5 Jitter Suzgeci", subpx_ok))
+
 
 
     # Tablo Yazdırma

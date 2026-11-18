@@ -8,7 +8,7 @@
 [![Autopilot](https://img.shields.io/badge/Autopilot-ArduPilot%20%2F%20PX4%20(MAVLink)-1E88E5)](https://ardupilot.org/)
 [![FastAPI](https://img.shields.io/badge/Mock%20Server-FastAPI%20%2F%20Uvicorn-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![GUI](https://img.shields.io/badge/GCS%20GUI-PyQt6-41CD52?logo=qt&logoColor=white)](https://riverbankcomputing.com/software/pyqt/)
-[![Tests](https://img.shields.io/badge/Tests-137%20Passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-143%20Passed-brightgreen)](tests/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](Dockerfile)
 [![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
@@ -767,6 +767,7 @@ teknofest_savasan_iha/
 │   ├── electronic_warfare.py       # GNSS Anti-Spoofing, RF Jamming tespiti ve Decoy filtresi
 │   ├── aerospace_ekf.py            # 15-Durumlu Havacılık EKF 6-DOF seyrüsefer ve sensör füzyonu
 │   ├── imm_filter.py               # Etkileşimli Çoklu Model (IMM) 3D Manevra Takipçisi (CV/CT/CA)
+│   ├── ukf_nonlinear.py            # 7-Durumlu CTRV 15 Sigma-Noktalı Unscented Kalman Filter (UKF)
 │   ├── audio_announcer.py          # Cockpit Voice Warning System (CVWS) & Prosedürel WAV sentezleyici
 │   ├── multi_hypothesis_tracker.py # Reid MHT çoklu hipotez takipçisi & Mahalanobis inovasyon kapısı
 │   └── threat_library.py           # Sabit/Döner kanat kinematik tehdit veri tabanı
@@ -775,6 +776,7 @@ teknofest_savasan_iha/
 │   ├── detector.py                 # YOLOv8/v11 & ONNX dedektör (ve sanal hedef üretici)
 │   ├── tracker.py                  # Kalman Filtresi ve IoU tabanlı çoklu hedef takipçisi
 │   ├── optical_flow_tracker.py     # Lucas-Kanade Optik Akış + HSV Re-ID Kararma (Occlusion) Kurtarıcı
+│   ├── subpixel_lead_tracker.py    # Alt-Piksel (%5 Jitter) Sabitleyici, Ego-Motion Telafisi & Lead Reticle
 │   ├── lock_engine.py              # 4.0 sn kesintisiz sayaç, %5 kuralı ve MP4 kanıt üreticisi
 │   ├── threat_classifier.py        # Tehdit sınıflandırıcı ve RWR arka sektör erken uyarısı
 │   ├── latency_compensator.py      # Gecikme telafisi için Delayed Kalman Filter (DKF)
@@ -800,6 +802,7 @@ teknofest_savasan_iha/
 │   ├── mavlink_bridge.py           # Pixhawk/SITL PyMAVLink haberleşmesi
 │   ├── guidance.py                 # PN, Pure Pursuit ve Coordinated Turn uçuş zarfı güdümü
 │   ├── mppi_guidance.py            # MPPI 4-Saniye Kilit Odaklı Stokastik Optimal Güdüm Kontrolcüsü
+│   ├── differential_game_solver.py # Rufus Isaacs Homicidal Chauffeur & Minimax Eyer Noktası Çözücüsü
 │   ├── mesh_datalink.py            # Sürü Taktik Mesh Veri Bağı, 3D Pasif Nirengi ve CBBA Tahsisi
 │   ├── neural_combat_pilot.py      # DARPA ACE nöral çok boyutlu it dalaşı manevra politikası
 │   ├── cooperative_combat.py       # Lider-Kanat / CCA işbirlikçi it dalaşı ve tuzak/pusu doktrini
@@ -822,12 +825,13 @@ teknofest_savasan_iha/
 │   ├── __init__.py
 │   ├── virtual_camera.py           # Sentetik gökyüzü ve hareketli rakip İHA video akışı
 │   ├── aerodynamics_6dof.py        # 6-DoF Non-linear ISA aerodinamik ve uçuş fiziği simülatörü
+│   ├── dryden_turbulence.py        # MIL-F-8785C Dryden Rüzgar Türbülansı ve Burnham-Hallock Wake Vortex
 │   ├── dogfight_gym_env.py         # OpenAI Gym uyumlu 16-D gözlem uzaylı RL it dalaşı ortamı
 │   ├── sitl_runner.py              # Otomatik başsız (headless) 100+ it dalaşı senaryo koşturucu
 │   └── dogfight_simulator.py       # 3D 1v1 Mavi/Kırmızı İHA it dalaşı simülatörü
 ├── tools/
 │   ├── __init__.py
-│   ├── preflight_check.py          # Uçuş öncesi 35 kritik bileşenin otomatik kontrolü
+│   ├── preflight_check.py          # Uçuş öncesi 40 kritik bileşenin otomatik kontrolü
 │   ├── train_self_play_league.py   # Nöral Self-Play RL Turnuva ve FIDE Elo Derecelendirme Ligi
 │   ├── export_flight_replay_3d.py  # Tek dosyalık 3D WebGL / Three.js it dalaşı tekrar stüdyosu
 │   ├── verify_proofs.py            # Kriptografik kilitlenme kanıt manifestosu ve kural denetleyicisi

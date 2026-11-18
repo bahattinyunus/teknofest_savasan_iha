@@ -28,12 +28,16 @@ from core.aerospace_ekf import AerospaceEKF
 from core.audio_announcer import CockpitVoiceAnnouncer, CockpitAudioEvent
 from core.multi_hypothesis_tracker import MultiHypothesisTracker
 from core.imm_filter import InteractingMultipleModelFilter
+from core.ukf_nonlinear import UnscentedKalmanFilter3D
 from autopilot.neural_combat_pilot import NeuralCombatPilot
 from autopilot.cooperative_combat import CooperativeCombatGovernor
 from autopilot.mppi_guidance import MPPILockGuidanceController
 from autopilot.mesh_datalink import TacticalMeshDatalink
+from autopilot.differential_game_solver import DifferentialGameSolver
 from vision.threat_classifier import ThreatClassifierRWR, RWRStatus
 from vision.optical_flow_tracker import OpticalFlowReIDTracker
+from vision.subpixel_lead_tracker import SubPixelDynamicLeadCompensator
+from simulation.dryden_turbulence import DrydenWindTurbulenceModel
 
 from vision.detector import YoloDetector, MockDetector
 from vision.tracker import KalmanTracker
@@ -89,6 +93,10 @@ class AeroCombatSystem:
         self.mppi_guidance = None
         self.mesh_datalink = None
         self.optical_flow_reid = None
+        self.diff_game_solver = None
+        self.ukf_filter = None
+        self.dryden_turbulence = None
+        self.subpixel_compensator = None
 
 
         self._init_subsystems()
@@ -249,6 +257,13 @@ class AeroCombatSystem:
         self.mppi_guidance = MPPILockGuidanceController()
         self.mesh_datalink = TacticalMeshDatalink(own_uav_id=takim_no)
         self.optical_flow_reid = OpticalFlowReIDTracker()
+        self.diff_game_solver = DifferentialGameSolver()
+        self.ukf_filter = UnscentedKalmanFilter3D()
+        self.dryden_turbulence = DrydenWindTurbulenceModel()
+        self.subpixel_compensator = SubPixelDynamicLeadCompensator(
+            frame_width=cam_cfg.get("genislik", 1280),
+            frame_height=cam_cfg.get("yukseklik", 720)
+        )
         self._frame_count = 0
 
 
@@ -361,6 +376,13 @@ class AeroCombatSystem:
                     current_time=t_now
                 )
 
+            # 2.c Alt-Piksel (Sub-Pixel) Kutu Sabitleme ve Ego-Motion (p,q,r) Telafisi
+            if self.subpixel_compensator and tracked_boxes and self.config.get("alt_piksel_dinamik_nisangah", {}).get("aktif", True):
+                tracked_boxes = [
+                    self.subpixel_compensator.refine_and_compute_lead(box=b, dt=dt).refined_box
+                    for b in tracked_boxes
+                ]
+
             # Elektronik Harp: Optik Sahte Hedef / Flare Filtreleme
             if self.ew_suite:
                 tracked_boxes = self.ew_suite.filter_visual_decoys(
@@ -431,12 +453,25 @@ class AeroCombatSystem:
                 )
                 bus.emit(EVENT_TACTICAL_MANEUVER, command=maneuver_cmd)
 
-            # IMM 3D Manevra Kestirimi ve MPPI 4-Saniye Kilit Güdümü
+            # IMM 3D Manevra Kestirimi, UKF Non-Linear Füzyon, MPPI ve Isaacs Diferansiyel Oyun Çözümü
             if self.imm_filter and self.mppi_guidance and aktif_hedef:
                 imm_est = self.imm_filter.step(
                     measured_pos_ned_m=(32.0, 4.0, -current_tel.IHA_irtifa),
                     dt=dt
                 )
+                if self.ukf_filter:
+                    _ = self.ukf_filter.step(
+                        measured_pos_ned_m=imm_est.pos_ned_m,
+                        own_pos_ned_m=(0.0, 0.0, -current_tel.IHA_irtifa),
+                        dt=dt
+                    )
+                if self.diff_game_solver:
+                    _ = self.diff_game_solver.solve_saddle_point(
+                        own_pos_ned=(0.0, 0.0, -current_tel.IHA_irtifa),
+                        own_vel_ned=(current_tel.IHA_hiz, 0.0, 0.0),
+                        target_pos_ned=imm_est.pos_ned_m,
+                        target_vel_ned=imm_est.vel_ned_mps
+                    )
                 _ = self.mppi_guidance.compute_optimal_command(
                     own_pos_ned=(0.0, 0.0, -current_tel.IHA_irtifa),
                     own_vel_ned=(current_tel.IHA_hiz, 0.0, 0.0),

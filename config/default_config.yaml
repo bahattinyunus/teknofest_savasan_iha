@@ -232,5 +232,30 @@ optik_akis_reid:
   benzerlik_esigi: 0.55
   maks_arama_mesafesi_px: 220.0
 
+diferansiyel_oyun_teorisi:
+  aktif: true                         # Rufus Isaacs Homicidal Chauffeur & Minimax Eyer Noktası Çözücüsü
+  avci_min_donus_yaricapi_m: 24.0
+  kacan_min_donus_yaricapi_m: 22.0
+  cozum_ufku_sn: 1.6
+
+ukf_nonlinear_filtre:
+  aktif: true                         # 7-Durumlu CTRV Sigma-Noktalı Unscented Kalman Filter (UKF)
+  alpha: 0.25
+  beta: 2.0
+  aci_gurultusu_rad: 0.025
+  menzil_gurultusu_m: 2.2
+
+dryden_turbulans_modeli:
+  aktif: true                         # MIL-F-8785C Dryden Rüzgar Türbülansı ve Burnham-Hallock Wake Vortex
+  siddet: "LIGHT"                     # NONE, LIGHT, MODERATE, SEVERE
+  ruzgar_hizi_20ft_mps: 4.5
+  ruzgar_yonu_deg: 45.0
+
+alt_piksel_dinamik_nisangah:
+  aktif: true                         # Sub-Pixel Jitter Bastırıcı, Ego-Motion (p,q,r) Telafisi ve Lead Reticle
+  onleme_ufku_sn: 0.14
+  yumusatma_katsayisi: 0.62
+
+
 
 

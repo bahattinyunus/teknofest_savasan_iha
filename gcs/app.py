@@ -1030,4 +1030,14 @@ def launch_gcs(system_controller=None):
     app = QApplication.instance() or QApplication(sys.argv)
     window = GCSMainWindow(system_controller)
     window.show()
+    window.raise_()
+    window.activateWindow()
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            hwnd = int(window.winId())
+            ctypes.windll.user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+            ctypes.windll.user32.SetForegroundWindow(hwnd)
+        except Exception:
+            pass
     app.exec()

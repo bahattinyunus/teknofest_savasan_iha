@@ -30,6 +30,7 @@ from .aerospace_ekf import AerospaceEKF
 from .multi_hypothesis_tracker import MultiHypothesisTracker
 from .audio_announcer import CockpitVoiceAnnouncer, CockpitAudioEvent
 from .imm_filter import InteractingMultipleModelFilter, FlightModelMode, IMMTargetEstimate
+from .ukf_nonlinear import UnscentedKalmanFilter3D, UKFTargetState
 
 __all__ = [
     "ZamanBilgisi",
@@ -65,5 +66,7 @@ __all__ = [
     "CockpitAudioEvent",
     "InteractingMultipleModelFilter",
     "FlightModelMode",
-    "IMMTargetEstimate"
+    "IMMTargetEstimate",
+    "UnscentedKalmanFilter3D",
+    "UKFTargetState"
 ]

@@ -14,6 +14,7 @@ from .optical_ranging import OpticalRanger, OpticalRangingResult
 from .multi_camera_fusion import MultiCameraFusion, CameraRole, FusedTarget
 from .threat_classifier import ThreatClassifierRWR, RWRStatus
 from .optical_flow_tracker import OpticalFlowReIDTracker, OpticalTrackMemory
+from .subpixel_lead_tracker import SubPixelDynamicLeadCompensator, SubPixelLeadSolution
 
 __all__ = [
     "YoloDetector",
@@ -34,5 +35,7 @@ __all__ = [
     "ThreatClassifierRWR",
     "RWRStatus",
     "OpticalFlowReIDTracker",
-    "OpticalTrackMemory"
+    "OpticalTrackMemory",
+    "SubPixelDynamicLeadCompensator",
+    "SubPixelLeadSolution"
 ]

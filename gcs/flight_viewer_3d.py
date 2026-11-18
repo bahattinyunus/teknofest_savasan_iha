@@ -367,6 +367,16 @@ def launch_3d_viewer():
     app = QApplication.instance() or QApplication(sys.argv)
     win = FlightViewer3DWindow()
     win.show()
+    win.raise_()
+    win.activateWindow()
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            hwnd = int(win.winId())
+            ctypes.windll.user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+            ctypes.windll.user32.SetForegroundWindow(hwnd)
+        except Exception:
+            pass
     app.exec()
 
 

@@ -28,6 +28,12 @@ from .neural_combat_pilot import NeuralCombatPilot
 from .cooperative_combat import CooperativeCombatGovernor
 from .mppi_guidance import MPPILockGuidanceController, MPPIControlCommand
 from .mesh_datalink import TacticalMeshDatalink, MeshPacket, TriangulatedTarget3D, SwarmAllocationResult
+from .differential_game_solver import (
+    DifferentialGameSolver,
+    IsaacsSaddlePointSolution,
+    PursuerAction,
+    EvaderAction
+)
 
 __all__ = [
     "MavlinkBridge",
@@ -65,5 +71,9 @@ __all__ = [
     "TacticalMeshDatalink",
     "MeshPacket",
     "TriangulatedTarget3D",
-    "SwarmAllocationResult"
+    "SwarmAllocationResult",
+    "DifferentialGameSolver",
+    "IsaacsSaddlePointSolution",
+    "PursuerAction",
+    "EvaderAction"
 ]
